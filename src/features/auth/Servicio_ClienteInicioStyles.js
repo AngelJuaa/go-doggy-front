@@ -1,0 +1,98 @@
+import { StyleSheet } from "react-native";
+
+export const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#F2F2F2",
+  },
+  backButton: {
+    position: "absolute",
+    top: 50,
+    left: 20,
+    zIndex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  backText: {
+    color: "white",
+    fontSize: 20,
+  },
+  titleText: {
+    fontSize: 30,
+    textAlign: "center",
+    marginVertical: 20,
+    fontFamily: "serif",
+    marginTop: 60,
+  },
+  scrollContent: {
+    alignItems: "center",
+    paddingBottom: 100,
+    paddingHorizontal: 15,
+  },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  gridItem: {
+    width: "48%",
+    height: 180,
+    marginBottom: 15,
+    borderRadius: 15,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  gridImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  gridOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  gridLabel: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "white",
+  },
+  bottomTab: {
+    flexDirection: "row",
+    backgroundColor: "#99D9C1",
+    height: 70,
+    position: "absolute",
+    bottom: 0,
+    width: "100%",
+    justifyContent: "space-around",
+    alignItems: "center",
+  },
+  tabItem: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tabLabel: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 5,
+  },
+  tabIconImg: {
+    width: 40,
+    height: 40,
+    resizeMode: "contain",
+  },
+});

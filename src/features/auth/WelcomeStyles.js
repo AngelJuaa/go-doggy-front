@@ -1,0 +1,55 @@
+import { StyleSheet } from "react-native";
+
+export const welcomeStyles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#F5F5F0" },
+  backgroundImage: {
+    position: "absolute",
+    top: 0,
+    width: "100%",
+    height: 450,
+    resizeMode: "cover",
+    zIndex: 1,
+  },
+  header: {
+    flex: 0.5,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 2,
+  },
+  title: { fontSize: 40, fontWeight: "bold", color: "#000", marginTop: 50 },
+  card: {
+    flex: 0.6,
+    backgroundColor: "rgba(245, 239, 218, 0.98)",
+    marginHorizontal: 40,
+    marginBottom: 100,
+    borderRadius: 40,
+    padding: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 3,
+    elevation: 10,
+  },
+  pregunta: {
+    fontSize: 20,
+    marginBottom: 30,
+    fontWeight: "600",
+    color: "#333",
+    textAlign: "center",
+  },
+  buttonDueño: {
+    backgroundColor: "#7CEDA3",
+    width: "100%",
+    paddingVertical: 15,
+    borderRadius: 25,
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  buttonPaseador: {
+    backgroundColor: "#B3E5FC",
+    width: "100%",
+    paddingVertical: 15,
+    borderRadius: 25,
+    alignItems: "center",
+  },
+  buttonText: { fontSize: 18, fontWeight: "bold", color: "#333" },
+});
