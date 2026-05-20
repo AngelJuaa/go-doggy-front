@@ -2,34 +2,37 @@ import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 
-import WelcomePregunta from "./src/features/auth/WelcomePregunta";
-import Welcome from "./src/features/auth/Welcome";
-import Login from "./src/features/auth/Login";
-import RegistroUsuario from "./src/features/auth/RegistroUsuario";
-import RegistroPaseador from "./src/features/auth/RegistroPaseador";
-import Inicio_cliente from "./src/features/auth/Inicio_cliente";
-import Servicio_Cliente_Inicio from "./src/features/auth/Servicio_Cliente_Inicio";
-import Servicio_Cliente_Comida from "./src/features/auth/Servicio_Cliente_Comida";
-import Servicio_Cliente_Estetica from "./src/features/auth/Servicio_Cliente_Estetica";
-import Servicio_Cliente_Accesorios from "./src/features/auth/Servicio_Cliente_Accesorios";
-import Servicio_Cliente_Promociones from "./src/features/auth/Servicio_Cliente_Promociones";
-import Servicio_Cliente_Ofertas from "./src/features/auth/Servicio_Cliente_Ofertas";
-import Servicio_Cliente_Paseador from "./src/features/auth/Servicio_Cliente_Paseador";
-import Servicio_Detalles_Paseador from "./src/features/auth/Servicio_Detalles_Paseador";
-import Servicio_Detalles_Comida from "./src/features/auth/Servicio_Detalles_Comida";
-import Servicio_Detalles_Estetica from "./src/features/auth/Servicio_Detalles_Estetica";
-import Servicio_Detalles_Accesorios from "./src/features/auth/Servicio_Detalles_Accesorios";
-import Servicio_Detalles_Promociones from "./src/features/auth/Servicio_Detalles_Promociones";
-import Servicio_Detalles_Ofertas from "./src/features/auth/Servicio_Detalles_Ofertas";
-import PerfilUsuario from "./src/features/auth/PerfilUsuario";
-import EditarPerfilUsuario from "./src/features/auth/EditarPerfilUsuario";
-import EditarMascota from "./src/features/auth/EditarMascota";
-import RegistroMascota from "./src/features/auth/RegistroMascota";
-import CalificacionesUsuario from "./src/features/auth/CalificacionesUsuario";
-import ConfiguracionUsuario from "./src/features/auth/ConfiguracionUsuario";
-import LegalUsuario from "./src/features/auth/LegalUsuario";
-import SeguridadUsuario from "./src/features/auth/SeguridadUsuario";
-import MascotaDetalles from "./src/features/auth/MascotaDetalles";
+import WelcomePregunta from "./src/screens/welcome/WelcomePregunta";
+import Welcome from "./src/screens/welcome/Welcome";
+import Login from "./src/screens/auth/Login";
+import RegistroUsuario from "./src/screens/auth/RegistroUsuario";
+import RegistroPaseador from "./src/screens/auth/RegistroPaseador";
+import InicioCliente from "./src/screens/cliente/InicioCliente";
+import InicioPaseador from "./src/screens/walker/InicioPaseador";
+
+import ServicioClienteInicio from "./src/screens/cliente/servicios/inicio/ServicioClienteInicio";
+import ServicioClienteComida from "./src/screens/cliente/servicios/comida/ServicioClienteComida";
+import ServicioClienteEstetica from "./src/screens/cliente/servicios/estetica/ServicioClienteEstetica";
+import ServicioClienteAccesorios from "./src/screens/cliente/servicios/accesorios/ServicioClienteAccesorios";
+import ServicioClientePromociones from "./src/screens/cliente/servicios/promociones/ServicioClientePromociones";
+import ServicioClienteOfertas from "./src/screens/cliente/servicios/ofertas/ServicioClienteOfertas";
+import ServicioClientePaseador from "./src/screens/cliente/servicios/paseador/ServicioClientePaseador";
+import ServicioPaseadorDetalles from "./src/screens/detalles_servicios/paseador/ServicioPaseadorDetalles";
+import ServicioComidaDetalles from "./src/screens/detalles_servicios/comida/ServicioComidaDetalles";
+import ServicioEsteticaDetalles from "./src/screens/detalles_servicios/estetica/ServicioEsteticaDetalles";
+import ServicioAccesoriosDetalles from "./src/screens/detalles_servicios/accesorios/ServicioAccesoriosDetalles";
+import ServicioPromocionesDetalles from "./src/screens/detalles_servicios/promociones/ServicioPromocionesDetalles";
+import ServicioOfertasDetalles from "./src/screens/detalles_servicios/ofertas/ServicioOfertasDetalles";
+
+import PerfilUsuario from "./src/screens/user/PerfilUsuario";
+import EditarPerfilUsuario from "./src/screens/user/EditarPerfilUsuario";
+import EditarMascota from "./src/screens/pets/EditarMascota";
+import RegistroMascota from "./src/screens/pets/RegistroMascota";
+import CalificacionesUsuario from "./src/screens/user/CalificacionesUsuario";
+import ConfiguracionUsuario from "./src/screens/user/ConfiguracionUsuario";
+import LegalUsuario from "./src/screens/user/LegalUsuario";
+import SeguridadUsuario from "./src/screens/user/SeguridadUsuario";
+import MascotaDetalles from "./src/screens/pets/MascotaDetalles";
 
 const Stack = createStackNavigator();
 
@@ -45,20 +48,60 @@ export default function App() {
         <Stack.Screen name="Login" component={Login} />
         <Stack.Screen name="RegistroUsuario" component={RegistroUsuario} />
         <Stack.Screen name="RegistroPaseador" component={RegistroPaseador} />
-        <Stack.Screen name="Inicio_cliente" component={Inicio_cliente} />
-        <Stack.Screen name="Servicio_Cliente_Inicio" component={Servicio_Cliente_Inicio} />
-        <Stack.Screen name="Servicio_Cliente_Comida" component={Servicio_Cliente_Comida} />
-        <Stack.Screen name="Servicio_Cliente_Estetica" component={Servicio_Cliente_Estetica} />
-        <Stack.Screen name="Servicio_Cliente_Accesorios" component={Servicio_Cliente_Accesorios} />
-        <Stack.Screen name="Servicio_Cliente_Promociones" component={Servicio_Cliente_Promociones} />
-        <Stack.Screen name="Servicio_Cliente_Ofertas" component={Servicio_Cliente_Ofertas} />
-        <Stack.Screen name="Servicio_Cliente_Paseador" component={Servicio_Cliente_Paseador} />
-        <Stack.Screen name="Servicio_Detalles_Paseador" component={Servicio_Detalles_Paseador} />
-        <Stack.Screen name="Servicio_Detalles_Comida" component={Servicio_Detalles_Comida} />
-        <Stack.Screen name="Servicio_Detalles_Estetica" component={Servicio_Detalles_Estetica} />
-        <Stack.Screen name="Servicio_Detalles_Accesorios" component={Servicio_Detalles_Accesorios} />
-        <Stack.Screen name="Servicio_Detalles_Promociones" component={Servicio_Detalles_Promociones} />
-        <Stack.Screen name="Servicio_Detalles_Ofertas" component={Servicio_Detalles_Ofertas} />
+        <Stack.Screen name="Inicio_cliente" component={InicioCliente} />
+        <Stack.Screen name="Inicio_paseador" component={InicioPaseador} />
+        <Stack.Screen
+          name="Servicio_Cliente_Inicio"
+          component={ServicioClienteInicio}
+        />
+        <Stack.Screen
+          name="Servicio_Cliente_Comida"
+          component={ServicioClienteComida}
+        />
+        <Stack.Screen
+          name="Servicio_Cliente_Estetica"
+          component={ServicioClienteEstetica}
+        />
+        <Stack.Screen
+          name="Servicio_Cliente_Accesorios"
+          component={ServicioClienteAccesorios}
+        />
+        <Stack.Screen
+          name="Servicio_Cliente_Promociones"
+          component={ServicioClientePromociones}
+        />
+        <Stack.Screen
+          name="Servicio_Cliente_Ofertas"
+          component={ServicioClienteOfertas}
+        />
+        <Stack.Screen
+          name="Servicio_Cliente_Paseador"
+          component={ServicioClientePaseador}
+        />
+        <Stack.Screen
+          name="Servicio_Detalles_Paseador"
+          component={ServicioPaseadorDetalles}
+        />
+        <Stack.Screen
+          name="Servicio_Detalles_Comida"
+          component={ServicioComidaDetalles}
+        />
+        <Stack.Screen
+          name="Servicio_Detalles_Estetica"
+          component={ServicioEsteticaDetalles}
+        />
+        <Stack.Screen
+          name="Servicio_Detalles_Accesorios"
+          component={ServicioAccesoriosDetalles}
+        />
+        <Stack.Screen
+          name="Servicio_Detalles_Promociones"
+          component={ServicioPromocionesDetalles}
+        />
+        <Stack.Screen
+          name="Servicio_Detalles_Ofertas"
+          component={ServicioOfertasDetalles}
+        />
         <Stack.Screen name="PerfilUsuario" component={PerfilUsuario} />
         <Stack.Screen
           name="EditarPerfilUsuario"
