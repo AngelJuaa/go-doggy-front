@@ -33,6 +33,21 @@ import ConfiguracionUsuario from "./src/screens/user/ConfiguracionUsuario";
 import LegalUsuario from "./src/screens/user/LegalUsuario";
 import SeguridadUsuario from "./src/screens/user/SeguridadUsuario";
 import MascotaDetalles from "./src/screens/pets/MascotaDetalles";
+import PeticionPaseo from "./src/screens/cliente/PeticionPaseo";
+import MapaCliente from "./src/screens/cliente/MapaCliente";
+import MapaPaseador from "./src/screens/walker/MapaPaseador";
+import GananciasPaseador from "./src/screens/walker/GananciasPaseador";
+import GananciasDetalle  from "./src/screens/walker/stats/GananciasDetalle";
+import ConectadoDetalle  from "./src/screens/walker/stats/ConectadoDetalle";
+import PaseosDetalle     from "./src/screens/walker/stats/PaseosDetalle";
+import EstrellasDetalle  from "./src/screens/walker/stats/EstrellasDetalle";
+import PaseosPaseador from "./src/screens/walker/PaseosPaseador";
+import PerfilPaseador from "./src/screens/walker/PerfilPaseador";
+import RutaPaseo from "./src/screens/walker/RutaPaseo";
+import NotificacionesUsuario from "./src/screens/user/NotificacionesUsuario";
+import NotificacionDetalle from "./src/screens/user/NotificacionDetalle";
+import BilleteraUsuario from "./src/screens/user/BilleteraUsuario";
+import AyudaUsuario from "./src/screens/user/AyudaUsuario";
 
 const Stack = createStackNavigator();
 
@@ -117,6 +132,21 @@ export default function App() {
         <Stack.Screen name="LegalUsuario" component={LegalUsuario} />
         <Stack.Screen name="SeguridadUsuario" component={SeguridadUsuario} />
         <Stack.Screen name="MascotaDetalles" component={MascotaDetalles} />
+        <Stack.Screen name="PeticionPaseo" component={PeticionPaseo} />
+        <Stack.Screen name="MapaCliente" component={MapaCliente} />
+        <Stack.Screen name="MapaPaseador" component={MapaPaseador} />
+        <Stack.Screen name="GananciasPaseador"  component={GananciasPaseador} />
+        <Stack.Screen name="GananciasDetalle"   component={GananciasDetalle} />
+        <Stack.Screen name="ConectadoDetalle"   component={ConectadoDetalle} />
+        <Stack.Screen name="PaseosDetalle"      component={PaseosDetalle} />
+        <Stack.Screen name="EstrellasDetalle"   component={EstrellasDetalle} />
+        <Stack.Screen name="PaseosPaseador" component={PaseosPaseador} />
+        <Stack.Screen name="PerfilPaseador" component={PerfilPaseador} />
+        <Stack.Screen name="RutaPaseo" component={RutaPaseo} />
+        <Stack.Screen name="NotificacionesUsuario" component={NotificacionesUsuario} />
+        <Stack.Screen name="NotificacionDetalle" component={NotificacionDetalle} />
+        <Stack.Screen name="BilleteraUsuario" component={BilleteraUsuario} />
+        <Stack.Screen name="AyudaUsuario" component={AyudaUsuario} />
       </Stack.Navigator>
     </NavigationContainer>
   );

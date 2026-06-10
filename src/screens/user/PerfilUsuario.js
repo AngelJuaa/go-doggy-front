@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, Image, TouchableOpacity, ScrollView } from "react-native";
+﻿import React, { useState, useEffect } from "react";
+import { View, Text, Image, TouchableOpacity, ScrollView, Alert } from "react-native";
 import { styles } from "./styles/PerfilUsuarioStyles";
+import { s, vs, ms } from "../../utils/responsive";
+import storage from "../../utils/storage";
+import { API_URL } from "../../utils/api";
 
 export default function PerfilUsuario({ navigation }) {
   const [userName, setUserName] = useState("Usuario");
@@ -10,7 +13,7 @@ export default function PerfilUsuario({ navigation }) {
   const [hoveredTab, setHoveredTab] = useState(null);
 
   useEffect(() => {
-    const usuarioStr = localStorage.getItem("usuario");
+    const usuarioStr = storage.getItem("usuario");
     if (usuarioStr) {
       const usuario = JSON.parse(usuarioStr);
       const nombreCompleto = usuario.nombre_completo.split(" ");
@@ -19,7 +22,7 @@ export default function PerfilUsuario({ navigation }) {
       setUserName(`${primerNombre} ${primerApellido}`.trim());
       if (usuario.url_foto_perfil) {
         setUserImage({
-          uri: `http://localhost:3000/uploads/${usuario.url_foto_perfil}`,
+          uri: `${API_URL}/uploads/${usuario.url_foto_perfil}`,
         });
       }
     }
@@ -36,6 +39,7 @@ export default function PerfilUsuario({ navigation }) {
     { id: 4, nombre: "Billetera", icon: "💼", screen: "BilleteraUsuario" },
     { id: 5, nombre: "Seguridad", icon: "🛡️", screen: "SeguridadUsuario" },
     { id: 6, nombre: "Ayuda", icon: "❓", screen: "AyudaUsuario" },
+    // (la ruta AyudaUsuario ya está registrada)
     {
       id: 7,
       nombre: "Configuraciones",
@@ -69,7 +73,7 @@ export default function PerfilUsuario({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: vs(90) }}>
         {/* Cabecera del Perfil */}
         <View style={styles.profileSection}>
           <View style={styles.userNameContainer}>
@@ -85,7 +89,7 @@ export default function PerfilUsuario({ navigation }) {
               style={styles.optionItem}
               onPress={() => handlePress(opcion)} // Disparador del clic
             >
-              <Text style={{ fontSize: 24, marginRight: 20 }}>
+              <Text style={{ fontSize: ms(22), marginRight: s(18) }}>
                 {opcion.icon}
               </Text>
               <Text style={styles.optionText}>{opcion.nombre}</Text>
@@ -130,7 +134,7 @@ export default function PerfilUsuario({ navigation }) {
           onPressIn={() => setHoveredTab(2)}
           onPressOut={() => setHoveredTab(null)}
           onPress={() => {
-            /* Navegar a Mapa */
+            Alert.alert("Próximamente", "El mapa estará disponible pronto.")
           }}
         >
           {hoveredTab === 2 && <Text style={styles.tabLabel}>Mapa</Text>}
@@ -145,9 +149,7 @@ export default function PerfilUsuario({ navigation }) {
           onMouseLeave={() => setHoveredTab(null)}
           onPressIn={() => setHoveredTab(3)}
           onPressOut={() => setHoveredTab(null)}
-          onPress={() => {
-            /* Navegar a Notificaciones */
-          }}
+          onPress={() => navigation.navigate("NotificacionesUsuario")}
         >
           {hoveredTab === 3 && (
             <Text style={styles.tabLabel}>Notificaciones</Text>

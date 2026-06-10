@@ -13,6 +13,9 @@ import {
   StyleSheet,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { s, vs, ms } from "../../utils/responsive";
+import storage from "../../utils/storage";
+import { API_URL } from "../../utils/api";
 
 const formatNombreMascota = (text) => {
   return text
@@ -52,7 +55,7 @@ export default function RegistroMascota({ navigation }) {
   const [errorFoto, setErrorFoto] = useState("");
 
   useEffect(() => {
-    const usuarioStr = localStorage.getItem("usuario");
+    const usuarioStr = storage.getItem("usuario");
     if (usuarioStr) {
       const usuario = JSON.parse(usuarioStr);
       setUsuarioId(usuario.usuario_id);
@@ -148,11 +151,7 @@ export default function RegistroMascota({ navigation }) {
       setErrorAlergias("Describe la alergia");
       hasError = true;
     }
-    if (!foto) {
-      setErrorFoto("Selecciona una foto de la mascota");
-      hasError = true;
-    }
-
+    // Foto es opcional en web
     if (hasError) return;
 
     if (!usuarioId) {
@@ -163,7 +162,7 @@ export default function RegistroMascota({ navigation }) {
     try {
       const formData = new FormData();
 
-      formData.append("nombreMascota", formatNombreMascota(nombreMascota));
+      formData.append("nombre", formatNombreMascota(nombreMascota));
       formData.append("raza", raza);
       formData.append("color", color);
       formData.append("sexo", sexo);
@@ -188,7 +187,7 @@ export default function RegistroMascota({ navigation }) {
       console.log("🚀 Enviando mascota...");
       console.log("Foto incluida:", !!foto);
 
-      const response = await fetch("http://localhost:3000/mascota", {
+      const response = await fetch(`${API_URL}/mascota`, {
         method: "POST",
         body: formData,
       });
@@ -525,7 +524,7 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: "row",
     justifyContent: "flex-end",
-    padding: 10,
+    padding: s(10),
     backgroundColor: "#f5f5f5",
   },
   scrollView: {
@@ -534,18 +533,18 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 16,
-    paddingBottom: 40,
+    padding: s(15),
+    paddingBottom: vs(38),
   },
   title: {
-    fontSize: 24,
+    fontSize: ms(22),
     fontWeight: "bold",
-    marginBottom: 15,
+    marginBottom: vs(14),
   },
   card: {
     backgroundColor: "#99D9C1",
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: s(20),
+    padding: s(18),
     elevation: 6,
     shadowColor: "#000",
     shadowOpacity: 0.1,
@@ -553,13 +552,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
   },
   imageWrapper: {
-    marginBottom: 15,
+    marginBottom: vs(14),
     alignItems: "center",
   },
   photoPlaceholder: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+    width: s(130),
+    height: s(130),
+    borderRadius: s(65),
     borderWidth: 2,
     borderColor: "#7CEDA3",
     alignItems: "center",
@@ -567,43 +566,46 @@ const styles = StyleSheet.create({
     backgroundColor: "#e9ffe8",
   },
   photo: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
+    width: s(130),
+    height: s(130),
+    borderRadius: s(65),
     borderWidth: 2,
     borderColor: "#7CEDA3",
   },
   photoButton: {
-    marginTop: 8,
+    marginTop: vs(7),
     backgroundColor: "#7CEDA3",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingVertical: vs(9),
+    paddingHorizontal: s(14),
+    borderRadius: s(8),
   },
   section: {
-    marginBottom: 12,
+    marginBottom: vs(11),
   },
   label: {
-    marginBottom: 5,
+    marginBottom: vs(4),
     fontWeight: "bold",
+    fontSize: ms(13),
   },
   input: {
     width: "100%",
     backgroundColor: "#fff",
-    padding: 12,
-    borderRadius: 8,
+    padding: s(11),
+    borderRadius: s(8),
     borderWidth: 1,
     borderColor: "#ddd",
+    fontSize: ms(14),
   },
   inputMultiline: {
     width: "100%",
     backgroundColor: "#fff",
-    padding: 12,
-    borderRadius: 8,
+    padding: s(11),
+    borderRadius: s(8),
     borderWidth: 1,
     borderColor: "#ddd",
-    minHeight: 80,
+    minHeight: vs(75),
     textAlignVertical: "top",
+    fontSize: ms(14),
   },
   row: {
     flexDirection: "row",
@@ -620,36 +622,37 @@ const styles = StyleSheet.create({
   },
   checkButton: {
     flex: 1,
-    padding: 10,
-    borderRadius: 8,
+    padding: s(9),
+    borderRadius: s(8),
     borderWidth: 1,
     alignItems: "center",
   },
   smallButton: {
     width: "23%",
-    minWidth: 40,
-    minHeight: 36,
+    minWidth: s(38),
+    minHeight: vs(34),
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 6,
+    borderRadius: s(6),
     borderWidth: 1,
-    marginBottom: 8,
+    marginBottom: vs(7),
   },
   errorText: {
     color: "red",
-    marginTop: 4,
-    minHeight: 18,
+    marginTop: vs(3),
+    minHeight: vs(16),
+    fontSize: ms(12),
   },
   submitBtn: {
     backgroundColor: "#A67C52",
-    padding: 14,
-    borderRadius: 10,
+    padding: s(13),
+    borderRadius: s(10),
     alignItems: "center",
-    marginTop: 10,
+    marginTop: vs(10),
   },
   submitText: {
     color: "#333",
     fontWeight: "bold",
-    fontSize: 16,
+    fontSize: ms(15),
   },
 });

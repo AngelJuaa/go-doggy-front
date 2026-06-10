@@ -8,6 +8,9 @@ import {
   Image,
 } from "react-native";
 import { styles } from "./styles/EditarPerfilUsuarioStyles";
+import { s, vs, ms } from "../../utils/responsive";
+import storage from "../../utils/storage";
+import { API_URL } from "../../utils/api";
 
 export default function EditarPerfilUsuario({ navigation }) {
   const [nombre, setNombre] = useState("");
@@ -19,7 +22,7 @@ export default function EditarPerfilUsuario({ navigation }) {
   const [fotoPerfil, setFotoPerfil] = useState(null);
 
   useEffect(() => {
-    const usuarioStr = localStorage.getItem("usuario");
+    const usuarioStr = storage.getItem("usuario");
     if (usuarioStr) {
       const usuario = JSON.parse(usuarioStr);
       const nombreCompleto = usuario.nombre_completo.split(" ");
@@ -51,7 +54,7 @@ export default function EditarPerfilUsuario({ navigation }) {
       <View style={styles.header}>
         <View />
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={{ fontSize: 28 }}>↩</Text>
+          <Text style={{ fontSize: ms(26) }}>↩</Text>
         </TouchableOpacity>
       </View>
       <Text style={styles.title}>Editar perfil</Text>
@@ -59,7 +62,7 @@ export default function EditarPerfilUsuario({ navigation }) {
         <TouchableOpacity style={styles.avatarContainer}>
           {fotoPerfil ? (
             <Image
-              source={{ uri: `http://localhost:3000/uploads/${fotoPerfil}` }}
+              source={{ uri: `${API_URL}/uploads/${fotoPerfil}` }}
               style={styles.avatar}
             />
           ) : (
@@ -67,7 +70,7 @@ export default function EditarPerfilUsuario({ navigation }) {
               <Text>FOTO</Text>
             </View>
           )}
-          <Text style={{ fontWeight: "bold", marginTop: 5 }}>Añadir foto</Text>
+          <Text style={{ fontWeight: "bold", marginTop: vs(5) }}>Añadir foto</Text>
         </TouchableOpacity>
         <View style={styles.row}>
           <View style={styles.inputGroup}>

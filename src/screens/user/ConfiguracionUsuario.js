@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, ScrollView, Image } from "react-native";
 import { styles } from "./styles/ConfiguracionUsuarioStyles";
+import { ms } from "../../utils/responsive";
 
 export default function ConfiguracionUsuario({ navigation }) {
   const opciones = [
@@ -23,7 +24,7 @@ export default function ConfiguracionUsuario({ navigation }) {
           <Text style={styles.titleText}>Configuraciones</Text>
         </View>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={{ fontSize: 28 }}>↩</Text>
+          <Text style={{ fontSize: ms(26) }}>↩</Text>
         </TouchableOpacity>
       </View>
       <ScrollView style={styles.list}>

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, Image, TouchableOpacity, ScrollView } from "react-native";
+﻿import React, { useState, useEffect, useCallback } from "react";
+import { View, Text, Image, TouchableOpacity, ScrollView, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { styles } from "./ServicioClienteComidaStyles";
 
@@ -136,7 +136,7 @@ export default function Servicio_Cliente_Comida({ route, navigation }) {
           onPressIn={() => setHoveredTab(2)}
           onPressOut={() => setHoveredTab(null)}
           onPress={() => {
-            /* Navegar a Mapa */
+            Alert.alert("Próximamente", "El mapa estará disponible pronto.")
           }}
         >
           {hoveredTab === 2 && <Text style={styles.tabLabel}>Mapa</Text>}
@@ -152,7 +152,7 @@ export default function Servicio_Cliente_Comida({ route, navigation }) {
           onPressIn={() => setHoveredTab(3)}
           onPressOut={() => setHoveredTab(null)}
           onPress={() => {
-            /* Navegar a Notificaciones */
+            Alert.alert("Próximamente", "Las notificaciones estarán disponibles pronto.")
           }}
         >
           {hoveredTab === 3 && (

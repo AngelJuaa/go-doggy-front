@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { View, Text, Image, TouchableOpacity, ScrollView } from "react-native";
 import { styles } from "./ServicioClienteStyles";
 
@@ -122,9 +122,7 @@ export default function Servicio_Cliente_Inicio({ route, navigation }) {
           onMouseLeave={() => setHoveredTab(null)}
           onPressIn={() => setHoveredTab(2)}
           onPressOut={() => setHoveredTab(null)}
-          onPress={() => {
-            /* Navegar a Mapa */
-          }}
+          onPress={() => navigation.navigate("MapaCliente")}
         >
           {hoveredTab === 2 && <Text style={styles.tabLabel}>Mapa</Text>}
           <Image
@@ -138,15 +136,12 @@ export default function Servicio_Cliente_Inicio({ route, navigation }) {
           onMouseLeave={() => setHoveredTab(null)}
           onPressIn={() => setHoveredTab(3)}
           onPressOut={() => setHoveredTab(null)}
-          onPress={() => {
-            /* Navegar a Notificaciones */
-          }}
+          onPress={() => navigation.navigate("NotificacionesUsuario")}
         >
           {hoveredTab === 3 && (
             <Text style={styles.tabLabel}>Notificaciones</Text>
           )}
           <Image
-            r
             source={require("../../../../../assets/Notificaciones.png")}
             style={styles.tabIconImg}
           />

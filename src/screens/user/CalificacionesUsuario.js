@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, ScrollView, Image } from "react-native";
 import { styles } from "./styles/CalificacionesUsuarioStyles";
+import { s, vs, ms } from "../../utils/responsive";
 
 export default function CalificacionesUsuario({ navigation }) {
   const calificaciones = [
@@ -23,7 +24,7 @@ export default function CalificacionesUsuario({ navigation }) {
           <Text style={styles.titleText}>Calificaciones</Text>
         </View>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={{ fontSize: 28 }}>↩</Text>
+          <Text style={{ fontSize: ms(26) }}>↩</Text>
         </TouchableOpacity>
       </View>
 
@@ -54,7 +55,7 @@ export default function CalificacionesUsuario({ navigation }) {
             </View>
 
             <TouchableOpacity style={styles.arrow}>
-              <Text style={{ fontSize: 30 }}>›</Text>
+              <Text style={{ fontSize: ms(28) }}>›</Text>
             </TouchableOpacity>
 
             <View
@@ -64,31 +65,23 @@ export default function CalificacionesUsuario({ navigation }) {
         ))}
       </ScrollView>
 
-      <View
-        style={{
-          height: 70,
-          backgroundColor: "#99D9C1",
-          flexDirection: "row",
-          justifyContent: "space-around",
-          alignItems: "center",
-        }}
-      >
-        <Image
-          source={require("../../../assets/casa.png")}
-          style={{ width: 35, height: 35 }}
-        />
-        <Image
-          source={require("../../../assets/puntos.png")}
-          style={{ width: 35, height: 35 }}
-        />
-        <Image
-          source={require("../../../assets/maps.png")}
-          style={{ width: 35, height: 35 }}
-        />
-        <Image
-          source={require("../../../assets/Notificaciones.png")}
-          style={{ width: 35, height: 35 }}
-        />
+      <View style={{ height: vs(65), backgroundColor: "#99D9C1", flexDirection: "row", justifyContent: "space-around", alignItems: "center" }}>
+        <TouchableOpacity style={{ alignItems: "center", gap: vs(2) }} onPress={() => navigation.navigate("Inicio_paseador")}>
+          <Text style={{ fontSize: ms(20) }}>🏠</Text>
+          <Text style={{ fontSize: ms(10), fontWeight: "bold", color: "#1A1A1A" }}>Inicio</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={{ alignItems: "center", gap: vs(2) }} onPress={() => navigation.navigate("PaseosPaseador")}>
+          <Text style={{ fontSize: ms(20) }}>✅</Text>
+          <Text style={{ fontSize: ms(10), fontWeight: "bold", color: "#1A1A1A" }}>Paseos</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={{ alignItems: "center", gap: vs(2) }} onPress={() => navigation.navigate("NotificacionesUsuario")}>
+          <Text style={{ fontSize: ms(20) }}>🔔</Text>
+          <Text style={{ fontSize: ms(10), fontWeight: "bold", color: "#1A1A1A" }}>Notificaciones</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={{ alignItems: "center", gap: vs(2) }} onPress={() => navigation.navigate("PerfilPaseador")}>
+          <Text style={{ fontSize: ms(20) }}>👤</Text>
+          <Text style={{ fontSize: ms(10), fontWeight: "bold", color: "#1A1A1A" }}>Perfil</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );

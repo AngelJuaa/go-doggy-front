@@ -8,6 +8,7 @@ import {
   Alert,
 } from "react-native";
 import { styles } from "./styles/MascotaDetallesStyles";
+import { API_URL } from "../../utils/api";
 
 export default function MascotaDetalles({ route, navigation }) {
   const { mascota } = route.params;
@@ -40,7 +41,7 @@ export default function MascotaDetalles({ route, navigation }) {
   const handleConfirmDelete = async () => {
     setShowConfirm(false);
     try {
-      const url = `http://localhost:3000/mascota/${mascota.mascota_id}`;
+      const url = `${API_URL}/mascota/${mascota.mascota_id}`;
       console.log("🌐 URL completa:", url);
 
       const response = await fetch(url, {
@@ -87,7 +88,7 @@ export default function MascotaDetalles({ route, navigation }) {
         <Image
           source={
             mascota.url_foto
-              ? { uri: `http://localhost:3000/uploads/${mascota.url_foto}` }
+              ? { uri: `${API_URL}/uploads/${mascota.url_foto}` }
               : require("../../../assets/perro1.jpg")
           }
           style={styles.petImage}

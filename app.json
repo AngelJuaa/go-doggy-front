@@ -20,8 +20,20 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "GoDoggy necesita tu ubicación para el seguimiento de paseos en tiempo real."
+        }
+      ]
+    ],
     "web": {
       "favicon": "./assets/favicon.png"
     }

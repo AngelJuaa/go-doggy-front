@@ -10,8 +10,6 @@ export default function WelcomePregunta({ navigation }) {
         style={styles.backgroundImage}
       />
 
-      <View style={styles.header}></View>
-
       <View style={styles.card}>
         <Text style={styles.pregunta}>¿Cómo quieres unirte hoy?</Text>
 

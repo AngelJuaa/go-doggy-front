@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { styles } from "./styles/LegalUsuarioStyles";
+import { s, ms } from "../../utils/responsive";
 
 export default function LegalUsuario({ navigation }) {
   const opciones = [
@@ -11,13 +12,13 @@ export default function LegalUsuario({ navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
-        <Text style={{ fontSize: 30, marginRight: 15 }}>©</Text>
+        <Text style={{ fontSize: ms(28), marginRight: s(14) }}>©</Text>
         <View style={styles.titleBox}>
           <Text style={styles.titleText}>Legal</Text>
         </View>
         <View style={{ flex: 1 }} />
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={{ fontSize: 28 }}>↩</Text>
+          <Text style={{ fontSize: ms(26) }}>↩</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.list}>

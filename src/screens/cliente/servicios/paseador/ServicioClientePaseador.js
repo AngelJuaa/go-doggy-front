@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, Image, TouchableOpacity, ScrollView } from "react-native";
+﻿import React, { useState, useEffect, useCallback } from "react";
+import { View, Text, Image, TouchableOpacity, ScrollView, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { styles } from "./ServicioClientePaseadorStyles";
+import storage from "../../../../utils/storage";
+import { API_URL } from "../../../../utils/api";
 
 export default function Servicio_Cliente_Paseador({ route, navigation }) {
   // ========================
@@ -19,10 +21,10 @@ export default function Servicio_Cliente_Paseador({ route, navigation }) {
     useCallback(() => {
       const cargarPaseadores = async () => {
         try {
-          // Obtener usuario de localStorage
-          const usuarioGuardado = localStorage.getItem("usuario");
+          // Obtener usuario de storage
+          const usuarioGuardado = storage.getItem("usuario");
           if (!usuarioGuardado) {
-            console.error("No hay usuario guardado en localStorage");
+            console.error("No hay usuario guardado en storage");
             setPaseadores([]);
             return;
           }
@@ -33,7 +35,7 @@ export default function Servicio_Cliente_Paseador({ route, navigation }) {
           console.log("Cargando paseadores para usuario ID:", usuarioId);
 
           const response = await fetch(
-            `http://localhost:3000/paseadores/${usuarioId}`,
+            `${API_URL}/paseadores/${usuarioId}`,
           );
           const data = await response.json();
           console.log("Paseadores cargados:", data);
@@ -78,8 +80,9 @@ export default function Servicio_Cliente_Paseador({ route, navigation }) {
   // FUNCIÓN PARA RENDERIZAR ESTRELLAS
   // ========================
   const renderStars = (rating) => {
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
+    const safeRating = typeof rating === 'number' && !isNaN(rating) ? rating : 0;
+    const fullStars = Math.floor(safeRating);
+    const hasHalfStar = safeRating % 1 !== 0;
     const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
 
     return (
@@ -99,7 +102,7 @@ export default function Servicio_Cliente_Paseador({ route, navigation }) {
               ☆
             </Text>
           ))}
-        <Text style={styles.ratingText}>{rating}</Text>
+        <Text style={styles.ratingText}>{safeRating || '—'}</Text>
       </View>
     );
   };
@@ -120,27 +123,43 @@ export default function Servicio_Cliente_Paseador({ route, navigation }) {
       {/* CONTENIDO */}
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {(paseadores.length === 0 ? paseadoresEjemplo : paseadores).map(
-          (paseador, index) => (
-            <TouchableOpacity
-              key={`${paseador.id || paseador.nombre}-${index}`}
-              style={styles.paseadorCard}
-              onPress={() =>
-                navigation.navigate("Servicio_Detalles_Paseador", { paseador })
-              }
-            >
-              {/* IMAGEN IZQUIERDA */}
-              <Image source={paseador.imagen} style={styles.paseadorImage} />
+          (paseador, index) => {
+            // Normalizar campos: datos de API vs datos de ejemplo
+            const nombre = paseador.nombre_completo || paseador.nombre || 'Paseador';
+            const tipo = paseador.zona_operacion || paseador.tipo || 'Paseo';
+            const rating = paseador.resenias || 0;
+            const fotoUri = paseador.url_foto_perfil
+              ? `${API_URL}/uploads/${paseador.url_foto_perfil}`
+              : null;
 
-              {/* INFORMACIÓN CENTRAL */}
-              <View style={styles.paseadorInfo}>
-                <Text style={styles.paseadorName}>{paseador.nombre}</Text>
-                <Text style={styles.serviceType}>{paseador.tipo}</Text>
-              </View>
+            return (
+              <TouchableOpacity
+                key={`${paseador.usuario_id || paseador.id || index}`}
+                style={styles.paseadorCard}
+                onPress={() =>
+                  navigation.navigate("Servicio_Detalles_Paseador", { paseador })
+                }
+              >
+                {/* IMAGEN IZQUIERDA */}
+                {paseador.imagen ? (
+                  <Image source={paseador.imagen} style={styles.paseadorImage} />
+                ) : fotoUri ? (
+                  <Image source={{ uri: fotoUri }} style={styles.paseadorImage} />
+                ) : (
+                  <Image source={require("../../../../../assets/perro1.jpg")} style={styles.paseadorImage} />
+                )}
 
-              {/* RESEÑAS DERECHA */}
-              {renderStars(paseador.resenias)}
-            </TouchableOpacity>
-          ),
+                {/* INFORMACIÓN CENTRAL */}
+                <View style={styles.paseadorInfo}>
+                  <Text style={styles.paseadorName}>{nombre}</Text>
+                  <Text style={styles.serviceType}>{tipo}</Text>
+                </View>
+
+                {/* RESEÑAS DERECHA */}
+                {renderStars(rating)}
+              </TouchableOpacity>
+            );
+          },
         )}
       </ScrollView>
 
@@ -180,9 +199,7 @@ export default function Servicio_Cliente_Paseador({ route, navigation }) {
           onMouseLeave={() => setHoveredTab(null)}
           onPressIn={() => setHoveredTab(2)}
           onPressOut={() => setHoveredTab(null)}
-          onPress={() => {
-            /* Navegar a Mapa */
-          }}
+          onPress={() => navigation.navigate("MapaCliente")}
         >
           {hoveredTab === 2 && <Text style={styles.tabLabel}>Mapa</Text>}
           <Image
@@ -196,9 +213,7 @@ export default function Servicio_Cliente_Paseador({ route, navigation }) {
           onMouseLeave={() => setHoveredTab(null)}
           onPressIn={() => setHoveredTab(3)}
           onPressOut={() => setHoveredTab(null)}
-          onPress={() => {
-            /* Navegar a Notificaciones */
-          }}
+          onPress={() => navigation.navigate("NotificacionesUsuario")}
         >
           {hoveredTab === 3 && (
             <Text style={styles.tabLabel}>Notificaciones</Text>

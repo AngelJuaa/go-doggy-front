@@ -8,8 +8,10 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
+import { s, vs, ms } from "../../utils/responsive";
 import * as ImagePicker from "expo-image-picker";
 import { styles } from "./styles/RegistroUsuarioStyles";
+import { API_URL } from "../../utils/api";
 
 export default function RegistroUsuario({ navigation }) {
   const [nombre, setNombre] = useState("");
@@ -116,7 +118,7 @@ export default function RegistroUsuario({ navigation }) {
       console.log("Nombre:", nombre, "Teléfono:", telefono, "Email:", correo);
       console.log("Foto seleccionada:", fotoPerfil ? "Sí" : "No");
 
-      const response = await fetch("http://localhost:3000/registro", {
+      const response = await fetch(`${API_URL}/registro`, {
         method: "POST",
         body: formData,
       });
@@ -139,11 +141,28 @@ export default function RegistroUsuario({ navigation }) {
   /// Lo que se ve
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Image
-        source={require("../../../assets/logo.png")}
-        style={styles.headerImage}
-      />
+    <View style={{ flex: 1 }}>
+      <TouchableOpacity
+        style={{
+          position: "absolute",
+          top: 45,
+          left: 18,
+          zIndex: 20,
+          backgroundColor: "rgba(0,0,0,0.45)",
+          borderRadius: 20,
+          paddingVertical: 7,
+          paddingHorizontal: 14,
+        }}
+        onPress={() => navigation.goBack()}
+      >
+        <Text style={{ color: "#fff", fontSize: 15, fontWeight: "bold" }}>← Volver</Text>
+      </TouchableOpacity>
+
+      <ScrollView contentContainerStyle={styles.container}>
+        <Image
+          source={require("../../../assets/logo.png")}
+          style={styles.headerImage}
+        />
 
       {/* 🔥 FORMULARIO COMPLETO */}
       <View style={styles.formCard}>
@@ -243,10 +262,10 @@ export default function RegistroUsuario({ navigation }) {
               <Image
                 source={{ uri: fotoPerfil.uri }}
                 style={{
-                  width: 120,
-                  height: 120,
-                  borderRadius: 60,
-                  marginBottom: 10,
+                  width: s(110),
+                  height: s(110),
+                  borderRadius: s(55),
+                  marginBottom: vs(10),
                   borderWidth: 2,
                   borderColor: "#7CEDA3",
                 }}
@@ -254,13 +273,13 @@ export default function RegistroUsuario({ navigation }) {
               <TouchableOpacity
                 style={{
                   backgroundColor: "#ff6b6b",
-                  paddingHorizontal: 15,
-                  paddingVertical: 8,
-                  borderRadius: 5,
+                  paddingHorizontal: s(14),
+                  paddingVertical: vs(7),
+                  borderRadius: s(5),
                 }}
                 onPress={() => setFotoPerfil(null)}
               >
-                <Text style={{ color: "white", fontWeight: "bold" }}>
+                <Text style={{ color: "white", fontWeight: "bold", fontSize: ms(13) }}>
                   ❌ Cambiar foto
                 </Text>
               </TouchableOpacity>
@@ -271,16 +290,16 @@ export default function RegistroUsuario({ navigation }) {
                 borderWidth: 2,
                 borderStyle: "dashed",
                 borderColor: "#7CEDA3",
-                borderRadius: 10,
-                padding: 20,
+                borderRadius: s(10),
+                padding: s(18),
                 alignItems: "center",
                 justifyContent: "center",
                 backgroundColor: "rgba(124, 237, 163, 0.1)",
               }}
               onPress={seleccionarFoto}
             >
-              <Text style={{ fontSize: 40, marginBottom: 10 }}>📷</Text>
-              <Text style={{ color: "#555", fontWeight: "bold" }}>
+              <Text style={{ fontSize: ms(36), marginBottom: vs(8) }}>📷</Text>
+              <Text style={{ color: "#555", fontWeight: "bold", fontSize: ms(14) }}>
                 Selecciona una foto
               </Text>
             </TouchableOpacity>
@@ -292,6 +311,7 @@ export default function RegistroUsuario({ navigation }) {
           <Text style={styles.submitBtnText}>Registrarse</Text>
         </TouchableOpacity>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }

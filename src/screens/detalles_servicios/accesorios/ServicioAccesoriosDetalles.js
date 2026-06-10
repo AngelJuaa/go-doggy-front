@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, Image, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, Image, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { styles } from "./ServicioAccesoriosDetallesStyles";
 
 export default function Servicio_Detalles_Accesorios({ route, navigation }) {
@@ -77,10 +77,16 @@ export default function Servicio_Detalles_Accesorios({ route, navigation }) {
 
         {/* BOTONES */}
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.agregarButton}>
+          <TouchableOpacity
+            style={styles.agregarButton}
+            onPress={() => Alert.alert("Carrito", `"${accesorioData.nombre}" agregado al carrito.\n${accesorioData.envio}`)}
+          >
             <Text style={styles.buttonText}>Agregar al Carrito</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.contactButton}>
+          <TouchableOpacity
+            style={styles.contactButton}
+            onPress={() => Alert.alert("Contactar Vendedor", accesorioData.garantia)}
+          >
             <Text style={styles.buttonText}>Contactar Vendedor</Text>
           </TouchableOpacity>
         </View>

@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Text, View, TextInput, TouchableOpacity, Image } from "react-native";
 import { loginStyles as styles } from "./styles/LoginStyles";
+import { s, vs, ms } from "../../utils/responsive";
+import storage from "../../utils/storage";
+import { API_URL } from "../../utils/api";
 
 export default function Login({ route, navigation }) {
   const { tipo } = route.params || { tipo: "cliente" };
@@ -49,7 +52,7 @@ export default function Login({ route, navigation }) {
     console.log("🚀 Intentando login...");
 
     try {
-      const response = await fetch("http://localhost:3000/login", {
+      const response = await fetch(`${API_URL}/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -70,7 +73,7 @@ export default function Login({ route, navigation }) {
         setPassword("");
 
         // 💾 Guardar sesión
-        localStorage.setItem("usuario", JSON.stringify(data.usuario));
+        storage.setItem("usuario", JSON.stringify(data.usuario));
 
         // 🔀 Navegación
         if (tipo === "cliente") {
@@ -104,14 +107,14 @@ export default function Login({ route, navigation }) {
       <TouchableOpacity
         style={{
           position: "absolute",
-          top: 50,
-          left: 20,
+          top: vs(50),
+          left: s(20),
           zIndex: 10,
-          padding: 10,
+          padding: s(10),
         }}
         onPress={() => navigation.goBack()}
       >
-        <Text style={{ fontSize: 16, color: "#333", fontWeight: "bold" }}>
+        <Text style={{ fontSize: ms(15), color: "#333", fontWeight: "bold" }}>
           ← Volver
         </Text>
       </TouchableOpacity>
@@ -122,6 +125,7 @@ export default function Login({ route, navigation }) {
       <Image
         source={require("../../../assets/logo.png")}
         style={styles.backgroundImage}
+        pointerEvents="none"
       />
 
       {/* 📝 Tarjeta de Login */}
@@ -143,7 +147,7 @@ export default function Login({ route, navigation }) {
           <Text style={styles.label}>Contraseña:</Text>
           <View style={styles.passwordContainer}>
             <TextInput
-              style={styles.input}
+              style={[styles.input, styles.passwordInput]}
               secureTextEntry={!showPassword}
               placeholder="******"
               value={password}

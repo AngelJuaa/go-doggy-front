@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, Image, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, Image, ScrollView, TouchableOpacity, Alert, Share } from "react-native";
 import { styles } from "./ServicioPromocionesDetallesStyles";
 
 export default function Servicio_Detalles_Promociones({ route, navigation }) {
@@ -83,10 +83,19 @@ export default function Servicio_Detalles_Promociones({ route, navigation }) {
 
         {/* BOTONES */}
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.canjearButton}>
+          <TouchableOpacity
+            style={styles.canjearButton}
+            onPress={() => Alert.alert("Canjear Promoción", `Usa el código: ${promocionData.codigo_promocional}\n\n${promocionData.condiciones}`, [
+              { text: "Cerrar", style: "cancel" },
+              { text: "Copiar código", onPress: () => Alert.alert("Copiado", `Código "${promocionData.codigo_promocional}" listo para usar.`) },
+            ])}
+          >
             <Text style={styles.buttonText}>Canjear Ahora</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.compartirButton}>
+          <TouchableOpacity
+            style={styles.compartirButton}
+            onPress={() => Share.share({ message: `¡Aprovecha esta promoción! ${promocionData.nombre} - ${promocionData.descuento} OFF. Código: ${promocionData.codigo_promocional}` })}
+          >
             <Text style={styles.buttonText}>Compartir</Text>
           </TouchableOpacity>
         </View>

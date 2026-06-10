@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useCallback } from "react";
+﻿import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, Image, TouchableOpacity, ScrollView } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { styles } from "./styles/InicioClienteStyles";
+import storage from "../../utils/storage";
+import { API_URL } from "../../utils/api";
 
 export default function Inicio_cliente({ route, navigation }) {
   // ========================
@@ -21,10 +23,10 @@ export default function Inicio_cliente({ route, navigation }) {
     useCallback(() => {
       const cargarMascotas = async () => {
         try {
-          // Obtener usuario de localStorage
-          const usuarioGuardado = localStorage.getItem("usuario");
+          // Obtener usuario de storage
+          const usuarioGuardado = storage.getItem("usuario");
           if (!usuarioGuardado) {
-            console.error("No hay usuario guardado en localStorage");
+            console.error("No hay usuario guardado en storage");
             setMascotas([]);
             return;
           }
@@ -35,7 +37,7 @@ export default function Inicio_cliente({ route, navigation }) {
           console.log("Cargando mascotas para usuario ID:", usuarioId);
 
           const response = await fetch(
-            `http://localhost:3000/mascotas/${usuarioId}`,
+            `${API_URL}/mascotas/${usuarioId}`,
           );
           const data = await response.json();
           console.log("Mascotas cargadas:", data);
@@ -94,7 +96,7 @@ export default function Inicio_cliente({ route, navigation }) {
                 source={
                   mascota.url_foto
                     ? {
-                        uri: `http://localhost:3000/uploads/${mascota.url_foto}`,
+                        uri: `${API_URL}/uploads/${mascota.url_foto}`,
                       }
                     : require("../../../assets/perro1.jpg")
                 }
@@ -109,7 +111,10 @@ export default function Inicio_cliente({ route, navigation }) {
         )}
 
         {/* BOTÓN BUSCAR */}
-        <TouchableOpacity style={styles.searchCircle}>
+        <TouchableOpacity
+          style={styles.searchCircle}
+          onPress={() => navigation.navigate("PeticionPaseo")}
+        >
           <Text style={styles.searchText}>Buscar paseador</Text>
         </TouchableOpacity>
 
@@ -155,9 +160,7 @@ export default function Inicio_cliente({ route, navigation }) {
           onMouseLeave={() => setHoveredTab(null)}
           onPressIn={() => setHoveredTab(2)}
           onPressOut={() => setHoveredTab(null)}
-          onPress={() => {
-            /* Navegar a Mapa */
-          }}
+          onPress={() => navigation.navigate("MapaCliente")}
         >
           {hoveredTab === 2 && <Text style={styles.tabLabel}>Mapa</Text>}
           <Image
@@ -171,9 +174,7 @@ export default function Inicio_cliente({ route, navigation }) {
           onMouseLeave={() => setHoveredTab(null)}
           onPressIn={() => setHoveredTab(3)}
           onPressOut={() => setHoveredTab(null)}
-          onPress={() => {
-            /* Navegar a Notificaciones */
-          }}
+          onPress={() => navigation.navigate("NotificacionesUsuario")}
         >
           {hoveredTab === 3 && (
             <Text style={styles.tabLabel}>Notificaciones</Text>

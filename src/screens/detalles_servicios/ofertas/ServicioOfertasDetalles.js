@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, Image, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, Image, ScrollView, TouchableOpacity, Alert, Share } from "react-native";
 import { styles } from "./ServicioOfertasDetallesStyles";
 
 export default function Servicio_Detalles_Ofertas({ route, navigation }) {
@@ -80,10 +80,19 @@ export default function Servicio_Detalles_Ofertas({ route, navigation }) {
 
         {/* BOTONES */}
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.comprarButton}>
+          <TouchableOpacity
+            style={styles.comprarButton}
+            onPress={() => Alert.alert("Comprar Ahora", `${ofertaData.nombre}\nPrecio: ${ofertaData.precio}\n${ofertaData.envio_rapido}`, [
+              { text: "Cancelar", style: "cancel" },
+              { text: "Comprar", onPress: () => Alert.alert("¡Compra realizada!", "Tu pedido ha sido procesado exitosamente.") },
+            ])}
+          >
             <Text style={styles.buttonText}>Comprar Ahora</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.compartirButton}>
+          <TouchableOpacity
+            style={styles.compartirButton}
+            onPress={() => Share.share({ message: `¡Mira esta oferta! ${ofertaData.nombre} a solo ${ofertaData.precio}. Válida: ${ofertaData.duracion_oferta}` })}
+          >
             <Text style={styles.buttonText}>Compartir</Text>
           </TouchableOpacity>
         </View>
