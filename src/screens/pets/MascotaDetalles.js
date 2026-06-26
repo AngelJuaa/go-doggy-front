@@ -13,12 +13,49 @@ import { API_URL } from "../../utils/api";
 export default function MascotaDetalles({ route, navigation }) {
   const { mascota } = route.params;
   const [showConfirm, setShowConfirm] = useState(false);
+  const [hoveredTab, setHoveredTab] = useState(null);
+  const tipoMascota = mascota.tipo_mascota || mascota.tipoMascota || "Sin registro";
 
   const regresar = () => navigation.goBack();
 
   const editarMascota = () => {
     navigation.navigate("EditarMascota", { mascota });
   };
+
+  const formatFecha = (fecha) => {
+    if (!fecha) return "Sin registro";
+    const iso = fecha.toString().split("T")[0];
+    return iso;
+  };
+
+  const formatEsterilizado = (valor) => {
+    if (typeof valor === "boolean") return valor ? "Sí" : "No";
+    const texto = String(valor || "").trim().toLowerCase();
+    return texto === "si" || texto === "sí" || texto === "true"
+      ? "Sí"
+      : "No";
+  };
+
+  const detalleMascota = [
+    { label: "Tipo de Mascota", value: tipoMascota },
+    { label: "Nombre", value: mascota.nombre },
+    { label: "Raza", value: mascota.raza },
+    { label: "Color", value: mascota.color },
+    { label: "Sexo", value: mascota.sexo },
+    {
+      label: "Fecha de Nacimiento",
+      value: formatFecha(mascota.fecha_nacimiento),
+    },
+    { label: "Peso", value: mascota.peso_kg ? `${mascota.peso_kg} kg` : "Sin registro" },
+    { label: "Esterilizado", value: formatEsterilizado(mascota.esterilizado) },
+    { label: "Miedos", value: mascota.miedos || "Ninguno" },
+    { label: "Alergias", value: mascota.alergias || "Ninguna" },
+    { label: "Número de Patas", value: mascota.num_patas ?? "Sin registro" },
+    {
+      label: "Notas de Comportamiento",
+      value: mascota.notas_comportamiento || "Ninguna",
+    },
+  ];
 
   const eliminarMascota = () => {
     console.log("🐶 Mascota completa:", JSON.stringify(mascota, null, 2));
@@ -97,41 +134,13 @@ export default function MascotaDetalles({ route, navigation }) {
         <Text style={styles.petName}>{mascota.nombre}</Text>
 
         <View style={styles.detailsContainer}>
-          <Text style={styles.detailLabel}>Raza:</Text>
-          <Text style={styles.detailValue}>{mascota.raza}</Text>
-
-          <Text style={styles.detailLabel}>Color:</Text>
-          <Text style={styles.detailValue}>{mascota.color}</Text>
-
-          <Text style={styles.detailLabel}>Sexo:</Text>
-          <Text style={styles.detailValue}>{mascota.sexo}</Text>
-
-          <Text style={styles.detailLabel}>Fecha de Nacimiento:</Text>
-          <Text style={styles.detailValue}>{mascota.fecha_nacimiento}</Text>
-
-          <Text style={styles.detailLabel}>Peso:</Text>
-          <Text style={styles.detailValue}>{mascota.peso_kg} kg</Text>
-
-          <Text style={styles.detailLabel}>Esterilizado:</Text>
-          <Text style={styles.detailValue}>
-            {mascota.esterilizado ? "Sí" : "No"}
-          </Text>
-
-          <Text style={styles.detailLabel}>Miedos:</Text>
-          <Text style={styles.detailValue}>{mascota.miedos || "Ninguno"}</Text>
-
-          <Text style={styles.detailLabel}>Alérgias:</Text>
-          <Text style={styles.detailValue}>
-            {mascota.alergias || "Ninguna"}
-          </Text>
-
-          <Text style={styles.detailLabel}>Número de Patas:</Text>
-          <Text style={styles.detailValue}>{mascota.num_patas}</Text>
-
-          <Text style={styles.detailLabel}>Notas de Comportamiento:</Text>
-          <Text style={styles.detailValue}>
-            {mascota.notas_comportamiento || "Ninguna"}
-          </Text>
+          <Text style={styles.detailsTitle}>Detalles de la mascota</Text>
+          {detalleMascota.map((detalle) => (
+            <View key={detalle.label} style={styles.detailRow}>
+              <Text style={styles.detailLabel}>{detalle.label}:</Text>
+              <Text style={styles.detailValue}>{detalle.value || "Sin registro"}</Text>
+            </View>
+          ))}
         </View>
 
         <View style={styles.buttonContainer}>
@@ -146,6 +155,67 @@ export default function MascotaDetalles({ route, navigation }) {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <View style={styles.bottomTab}>
+        <TouchableOpacity
+          style={styles.tabItem}
+          onMouseEnter={() => setHoveredTab(0)}
+          onMouseLeave={() => setHoveredTab(null)}
+          onPressIn={() => setHoveredTab(0)}
+          onPressOut={() => setHoveredTab(null)}
+          onPress={() => navigation.navigate("Inicio_cliente")}
+        >
+          {hoveredTab === 0 && <Text style={styles.tabLabel}>Inicio</Text>}
+          <Image
+            source={require("../../../assets/casa.png")}
+            style={styles.tabIconImg}
+          />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.tabItem}
+          onMouseEnter={() => setHoveredTab(1)}
+          onMouseLeave={() => setHoveredTab(null)}
+          onPressIn={() => setHoveredTab(1)}
+          onPressOut={() => setHoveredTab(null)}
+          onPress={() => navigation.navigate("Servicio_Cliente_Inicio")}
+        >
+          {hoveredTab === 1 && <Text style={styles.tabLabel}>Servicio</Text>}
+          <Image
+            source={require("../../../assets/puntos.png")}
+            style={styles.tabIconImg}
+          />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.tabItem}
+          onMouseEnter={() => setHoveredTab(2)}
+          onMouseLeave={() => setHoveredTab(null)}
+          onPressIn={() => setHoveredTab(2)}
+          onPressOut={() => setHoveredTab(null)}
+          onPress={() => navigation.navigate("MapaCliente")}
+        >
+          {hoveredTab === 2 && <Text style={styles.tabLabel}>Mapa</Text>}
+          <Image
+            source={require("../../../assets/maps.png")}
+            style={styles.tabIconImg}
+          />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.tabItem}
+          onMouseEnter={() => setHoveredTab(3)}
+          onMouseLeave={() => setHoveredTab(null)}
+          onPressIn={() => setHoveredTab(3)}
+          onPressOut={() => setHoveredTab(null)}
+          onPress={() => navigation.navigate("NotificacionesCliente")}
+        >
+          {hoveredTab === 3 && (
+            <Text style={styles.tabLabel}>Notificaciones</Text>
+          )}
+          <Image
+            source={require("../../../assets/Notificaciones.png")}
+            style={styles.tabIconImg}
+          />
+        </TouchableOpacity>
+      </View>
 
       {showConfirm && (
         <View style={styles.modalOverlay}>

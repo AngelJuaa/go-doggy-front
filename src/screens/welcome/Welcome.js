@@ -8,7 +8,7 @@ export default function Welcome({ route, navigation }) {
     <View style={styles.container}>
       <TouchableOpacity
         style={styles.backButton}
-        onPress={() => navigation.goBack()}
+        onPress={() => navigation.navigate("WelcomePregunta")}
       >
         <Text style={styles.backText}>← No soy {tipo}, cambiar rol</Text>
       </TouchableOpacity>
@@ -56,9 +56,12 @@ const styles = StyleSheet.create({
     top: 50,
     left: 20,
     zIndex: 10,
-    padding: 10,
+    backgroundColor: "rgba(233, 82, 149, 0.12)",
+    borderRadius: 24,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
   },
-  backText: { fontSize: 14, color: "#E95295", fontWeight: "600" },
+  backText: { fontSize: 14, color: "#E95295", fontWeight: "700" },
   // Círculo perfecto en cualquier tamaño gracias a aspectRatio + borderRadius alto
   circleContainer: {
     width: "65%",

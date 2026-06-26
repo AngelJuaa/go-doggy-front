@@ -9,11 +9,29 @@ export default function PerfilPaseador({ navigation }) {
   const [userImage, setUserImage] = useState(require("../../../assets/perfil.png"));
 
   useEffect(() => {
+    const paseadorStr = storage.getItem("paseador");
     const usuarioStr = storage.getItem("usuario");
-    if (usuarioStr) {
-      const usuario = JSON.parse(usuarioStr);
-      const nombre = usuario.nombre_completo?.split(" ").slice(0, 2).join(" ") || "Paseador";
-      setUserName(nombre);
+    const dataStr = paseadorStr || usuarioStr;
+
+    if (dataStr) {
+      const usuario = JSON.parse(dataStr);
+      const nombrePartes = [];
+
+      if (usuario.nombre) {
+        nombrePartes.push(usuario.nombre.split(" ")[0]);
+      }
+      if (usuario.apellido) {
+        nombrePartes.push(usuario.apellido.split(" ")[0]);
+      }
+      if (nombrePartes.length === 0 && usuario.nombre_completo) {
+        const partes = usuario.nombre_completo.split(" ");
+        nombrePartes.push(partes[0]);
+        if (partes.length > 1) nombrePartes.push(partes[1]);
+      }
+
+      const nombreFinal = nombrePartes.join(" ") || "Paseador";
+      setUserName(nombreFinal);
+
       if (usuario.url_foto_perfil) {
         setUserImage({ uri: `${API_URL}/uploads/${usuario.url_foto_perfil}` });
       }
@@ -73,7 +91,7 @@ export default function PerfilPaseador({ navigation }) {
         <TouchableOpacity style={styles.tabItem} onPress={() => navigation.navigate("PaseosPaseador")}>
           <Text style={styles.tabIcon}>✅</Text><Text style={styles.tabLabel}>Paseos</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.tabItem} onPress={() => navigation.navigate("NotificacionesUsuario")}>
+        <TouchableOpacity style={styles.tabItem} onPress={() => navigation.navigate("NotificacionesPaseador")}>
           <Text style={styles.tabIcon}>🔔</Text><Text style={styles.tabLabel}>Notificaciones</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.tabItem} onPress={() => {}}>

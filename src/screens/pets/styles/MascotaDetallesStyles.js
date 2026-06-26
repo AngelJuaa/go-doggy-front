@@ -20,6 +20,7 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     paddingTop: vs(100),
     paddingHorizontal: s(20),
+    paddingBottom: vs(95),
   },
   petImage: {
     width: s(180),
@@ -27,10 +28,10 @@ export const styles = StyleSheet.create({
     borderRadius: s(90),
     marginBottom: vs(18),
   },
-  petName: { fontSize: ms(26), fontWeight: "bold", color: "#333", marginBottom: vs(18) },
+  petName: { fontSize: ms(29), fontWeight: "bold", color: "#333", marginBottom: vs(18) },
   detailsContainer: {
     width: "100%",
-    backgroundColor: "white",
+    backgroundColor: "#99D9C1",
     borderRadius: s(10),
     padding: s(18),
     shadowColor: "#000",
@@ -39,8 +40,17 @@ export const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  detailLabel: { fontSize: ms(15), fontWeight: "bold", color: "#555", marginTop: vs(10) },
-  detailValue: { fontSize: ms(15), color: "#333", marginBottom: vs(4), lineHeight: ms(22) },
+  detailsTitle: {
+    fontSize: ms(20),
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: vs(8),
+  },
+  detailRow: {
+    marginTop: vs(8),
+  },
+  detailLabel: { fontSize: ms(15), fontWeight: "bold", color: "#4a3b2f" },
+  detailValue: { fontSize: ms(16), color: "#333", marginBottom: vs(2), lineHeight: ms(24) },
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -63,7 +73,7 @@ export const styles = StyleSheet.create({
     flex: 1,
     marginLeft: s(10),
   },
-  buttonText: { color: "white", fontSize: ms(15), fontWeight: "bold", textAlign: "center" },
+  buttonText: { color: "white", fontSize: ms(16), fontWeight: "bold", textAlign: "center" },
   modalOverlay: {
     position: "absolute",
     top: 0,
@@ -102,4 +112,17 @@ export const styles = StyleSheet.create({
     flex: 1,
     marginLeft: s(10),
   },
+  bottomTab: {
+    flexDirection: "row",
+    backgroundColor: "#99D9C1",
+    height: vs(65),
+    position: "absolute",
+    bottom: 0,
+    width: "100%",
+    justifyContent: "space-around",
+    alignItems: "center",
+  },
+  tabIconImg: { width: s(38), height: s(38), resizeMode: "contain" },
+  tabItem: { alignItems: "center", justifyContent: "center" },
+  tabLabel: { fontSize: ms(11), fontWeight: "bold", color: "#333", marginBottom: vs(4) },
 });

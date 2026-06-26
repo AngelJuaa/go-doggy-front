@@ -8,7 +8,11 @@ import {
 } from "react-native";
 
 export default function NotificacionDetalle({ route, navigation }) {
-  const { notificacion } = route.params || {};
+  const { notificacion, role = "cliente" } = route.params || {};
+  const homeRoute = role === "paseador" ? "Inicio_paseador" : "Inicio_cliente";
+  const serviceRoute = role === "paseador" ? "PaseosPaseador" : "Servicio_Cliente_Inicio";
+  const notificationsRoute = role === "paseador" ? "NotificacionesPaseador" : "NotificacionesCliente";
+  const profileRoute = role === "paseador" ? "PerfilPaseador" : "PerfilUsuario";
 
   if (!notificacion) {
     return (
@@ -57,28 +61,28 @@ export default function NotificacionDetalle({ route, navigation }) {
       <View style={styles.bottomTab}>
         <TouchableOpacity
           style={styles.tabItem}
-          onPress={() => navigation.navigate("Inicio_paseador")}
+          onPress={() => navigation.navigate(homeRoute)}
         >
           <Text style={styles.tabIcon}>🏠</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.tabItem}
-          onPress={() => navigation.navigate("PaseosPaseador")}
+          onPress={() => navigation.navigate(serviceRoute)}
         >
           <Text style={styles.tabIcon}>✅</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.tabItem}
-          onPress={() => navigation.navigate("NotificacionesUsuario")}
+          onPress={() => navigation.navigate(notificationsRoute)}
         >
           <Text style={styles.tabIcon}>🔔</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.tabItem}
-          onPress={() => navigation.navigate("PerfilPaseador")}
+          onPress={() => navigation.navigate(profileRoute)}
         >
           <Text style={styles.tabIcon}>👤</Text>
         </TouchableOpacity>

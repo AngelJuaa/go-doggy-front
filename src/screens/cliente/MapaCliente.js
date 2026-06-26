@@ -55,6 +55,7 @@ export default function MapaCliente({ route, navigation }) {
   const [address, setAddress]   = useState(null);
   const [loading, setLoading]   = useState(true);
   const [expanded, setExpanded] = useState(false);
+  const [savedExpanded, setSavedExpanded] = useState(false);
   const [estado, setEstado]     = useState("esperando");
   const [error, setError]       = useState(null);
 
@@ -256,6 +257,10 @@ export default function MapaCliente({ route, navigation }) {
   };
   const nativeRoute = rutaPaseador.map(p => ({ latitude: p[0], longitude: p[1] }));
 
+  const handleAddStartLocation = () => {
+    navigation.navigate("AgregarDireccionCliente");
+  };
+
   const sendInitialPosition = () => {
     if (clientePos) {
       iframeRef.current?.contentWindow?.postMessage(
@@ -306,6 +311,16 @@ export default function MapaCliente({ route, navigation }) {
                 🐕 Paseador: {paseadorPos.latitude.toFixed(5)}, {paseadorPos.longitude.toFixed(5)}
               </Text>
             ) : null}
+
+            <TouchableOpacity
+              style={styles.savedToggleBtn}
+              onPress={() => setSavedExpanded(!savedExpanded)}
+            >
+              <Text style={styles.savedToggleText}>Direcciones guardadas</Text>
+              <Text style={styles.savedToggleChevron}>{savedExpanded ? "▲" : "▼"}</Text>
+            </TouchableOpacity>
+
+            {savedExpanded ? <View style={styles.savedListBox} /> : null}
           </View>
 
           {/* CONTENEDOR DEL MAPA */}
@@ -370,6 +385,11 @@ export default function MapaCliente({ route, navigation }) {
               </Text>
             )}
           </View>
+
+          <TouchableOpacity style={styles.addButton} onPress={handleAddStartLocation}>
+            <Text style={styles.addIcon}>+</Text>
+          </TouchableOpacity>
+          <Text style={styles.addButtonLabel}>Agregar direccion</Text>
         </ScrollView>
       )}
 
@@ -419,7 +439,7 @@ export default function MapaCliente({ route, navigation }) {
           onMouseLeave={() => setHoveredTab(null)}
           onPressIn={() => setHoveredTab(3)}
           onPressOut={() => setHoveredTab(null)}
-          onPress={() => navigation.navigate("NotificacionesUsuario")}
+          onPress={() => navigation.navigate("NotificacionesCliente")}
         >
           {hoveredTab === 3 && <Text style={styles.tabLabel}>Notificaciones</Text>}
           <Image

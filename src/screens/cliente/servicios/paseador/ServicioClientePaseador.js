@@ -213,7 +213,7 @@ export default function Servicio_Cliente_Paseador({ route, navigation }) {
           onMouseLeave={() => setHoveredTab(null)}
           onPressIn={() => setHoveredTab(3)}
           onPressOut={() => setHoveredTab(null)}
-          onPress={() => navigation.navigate("NotificacionesUsuario")}
+          onPress={() => navigation.navigate("NotificacionesCliente")}
         >
           {hoveredTab === 3 && (
             <Text style={styles.tabLabel}>Notificaciones</Text>

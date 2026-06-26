@@ -114,7 +114,7 @@ export function BottomTab({ navigation }) {
   return (
     <View style={tabStyles.bar}>
       {[["🏠","Inicio","Inicio_paseador"],["✅","Paseos","PaseosPaseador"],
-        ["🔔","Notificaciones","NotificacionesUsuario"],["👤","Perfil","PerfilPaseador"]
+        ["🔔","Notificaciones","NotificacionesPaseador"],["👤","Perfil","PerfilPaseador"]
       ].map(([icon,label,route]) => (
         <TouchableOpacity key={route} style={tabStyles.item}
           onPress={() => navigation.navigate(route)}>

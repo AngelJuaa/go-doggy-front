@@ -132,9 +132,12 @@ export default function InicioPaseador({ navigation }) {
 
   // ─── Acciones de servicio ────────────────────────────────────────────────────
   const aceptarServicio = async () => {
-    if (!solicitudPendiente) return;
+    if (!solicitudPendiente || !usuario?.usuario_id) return;
     try {
-      const servicio = await apiFetch(`/servicio/${solicitudPendiente.servicio_id}/aceptar`, { method: "PUT" });
+      const servicio = await apiFetch(`/servicio/${solicitudPendiente.servicio_id}/aceptar`, { 
+        method: "PUT",
+        body: JSON.stringify({ paseador_id: usuario.usuario_id })
+      });
       servicioActivoRef.current = servicio;
       setServicioActivo(servicio);
       setSolicitudPendiente(null);
@@ -231,7 +234,7 @@ export default function InicioPaseador({ navigation }) {
             {/* Lado izquierdo: info del usuario */}
             <View style={styles.cardLeft}>
               <Text style={styles.cardUser}>
-                User{solicitudPendiente.dueno_id}
+                {solicitudPendiente.dueno_nombre || `User${solicitudPendiente.dueno_id}`}
               </Text>
               <Text style={styles.cardMascota}>
                 Mascota : {solicitudPendiente.mascota_nombre || `#${solicitudPendiente.mascota_id}`}
@@ -241,7 +244,7 @@ export default function InicioPaseador({ navigation }) {
             {/* Lado derecho: nota + botones */}
             <View style={styles.cardRight}>
               <Text style={styles.cardNota} numberOfLines={1}>
-                Nota : {solicitudPendiente.notas || "Sin notas"}
+                Nota : {solicitudPendiente.notas_dueno || solicitudPendiente.notas || "Sin notas"}
               </Text>
               <View style={styles.cardBtns}>
                 <TouchableOpacity style={styles.btnMatch} onPress={aceptarServicio}>
@@ -270,7 +273,7 @@ export default function InicioPaseador({ navigation }) {
           <Text style={styles.tabLabel}>Paseos</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.tabItem} onPress={() => navigation.navigate("NotificacionesUsuario")}>
+        <TouchableOpacity style={styles.tabItem} onPress={() => navigation.navigate("NotificacionesPaseador")}>
           <Text style={styles.tabIcon}>🔔</Text>
           <Text style={styles.tabLabel}>Notificaciones</Text>
         </TouchableOpacity>

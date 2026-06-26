@@ -162,7 +162,8 @@ export default function RegistroMascota({ navigation }) {
     try {
       const formData = new FormData();
 
-      formData.append("nombre", formatNombreMascota(nombreMascota));
+      formData.append("tipoMascota", tipoMascota.trim());
+      formData.append("nombreMascota", formatNombreMascota(nombreMascota));
       formData.append("raza", raza);
       formData.append("color", color);
       formData.append("sexo", sexo);
@@ -473,8 +474,9 @@ export default function RegistroMascota({ navigation }) {
                       style={[
                         styles.smallButton,
                         {
-                          borderColor: patas === n ? "#27ae60" : "#ccc",
-                          backgroundColor: patas === n ? "#d1f7e8" : "#fff",
+                          borderColor: patas === n ? selectedColor : "#ccc",
+                          backgroundColor:
+                            patas === n ? selectedColor : unselectedColor,
                         },
                       ]}
                     >

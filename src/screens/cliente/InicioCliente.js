@@ -104,7 +104,9 @@ export default function Inicio_cliente({ route, navigation }) {
               />
               <View style={styles.petInfo}>
                 <Text style={styles.petName}>{mascota.nombre}</Text>
-                <Text style={styles.petDetails}>Animal: {mascota.raza}</Text>
+                <Text style={styles.petDetails}>
+                  Animal: {mascota.tipo_mascota || mascota.tipoMascota || mascota.raza}
+                </Text>
               </View>
             </TouchableOpacity>
           ))
@@ -122,6 +124,7 @@ export default function Inicio_cliente({ route, navigation }) {
         <TouchableOpacity style={styles.addButton} onPress={irRegistroMascota}>
           <Text style={styles.addIcon}>+</Text>
         </TouchableOpacity>
+        <Text style={styles.addHintText}>Agregar nueva mascota</Text>
       </ScrollView>
 
       {/* BARRA INFERIOR */}
@@ -174,7 +177,7 @@ export default function Inicio_cliente({ route, navigation }) {
           onMouseLeave={() => setHoveredTab(null)}
           onPressIn={() => setHoveredTab(3)}
           onPressOut={() => setHoveredTab(null)}
-          onPress={() => navigation.navigate("NotificacionesUsuario")}
+          onPress={() => navigation.navigate("NotificacionesCliente")}
         >
           {hoveredTab === 3 && (
             <Text style={styles.tabLabel}>Notificaciones</Text>

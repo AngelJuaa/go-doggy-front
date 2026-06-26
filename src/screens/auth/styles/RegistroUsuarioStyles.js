@@ -21,6 +21,52 @@ export const styles = StyleSheet.create({
     fontSize: ms(16),
     paddingVertical: vs(2),
   },
+  inputDisabled: {
+    color: "#666",
+    backgroundColor: "rgba(0,0,0,0.04)",
+    paddingHorizontal: s(8),
+    borderRadius: s(8),
+  },
+  loadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: vs(8),
+    gap: s(8),
+  },
+  loadingText: {
+    fontSize: ms(13),
+    color: "#4A8F6A",
+    fontWeight: "600",
+  },
+  optionList: {
+    paddingVertical: vs(8),
+    gap: s(8),
+  },
+  optionChip: {
+    paddingHorizontal: s(14),
+    paddingVertical: vs(8),
+    borderRadius: s(18),
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#C9BFA7",
+  },
+  optionChipSelected: {
+    backgroundColor: "#85E5B5",
+    borderColor: "#85E5B5",
+  },
+  optionChipText: {
+    fontSize: ms(13),
+    color: "#5A5345",
+    fontWeight: "600",
+  },
+  optionChipTextSelected: {
+    color: "#1F3A2A",
+  },
+  helperText: {
+    marginTop: vs(6),
+    color: "#7A6E59",
+    fontSize: ms(12),
+  },
   submitBtn: {
     backgroundColor: "#85E5B5",
     paddingVertical: vs(12),

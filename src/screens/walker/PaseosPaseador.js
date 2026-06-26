@@ -77,7 +77,7 @@ export default function PaseosPaseador({ navigation }) {
         <TouchableOpacity style={styles.tabItem} onPress={() => {}}>
           <Text style={styles.tabIcon}>✅</Text><Text style={styles.tabLabel}>Paseos</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.tabItem} onPress={() => navigation.navigate("NotificacionesUsuario")}>
+        <TouchableOpacity style={styles.tabItem} onPress={() => navigation.navigate("NotificacionesPaseador")}>
           <Text style={styles.tabIcon}>🔔</Text><Text style={styles.tabLabel}>Notificaciones</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.tabItem} onPress={() => navigation.navigate("PerfilPaseador")}>

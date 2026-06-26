@@ -74,7 +74,7 @@ export default function CalificacionesUsuario({ navigation }) {
           <Text style={{ fontSize: ms(20) }}>✅</Text>
           <Text style={{ fontSize: ms(10), fontWeight: "bold", color: "#1A1A1A" }}>Paseos</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={{ alignItems: "center", gap: vs(2) }} onPress={() => navigation.navigate("NotificacionesUsuario")}>
+        <TouchableOpacity style={{ alignItems: "center", gap: vs(2) }} onPress={() => navigation.navigate("NotificacionesCliente")}>
           <Text style={{ fontSize: ms(20) }}>🔔</Text>
           <Text style={{ fontSize: ms(10), fontWeight: "bold", color: "#1A1A1A" }}>Notificaciones</Text>
         </TouchableOpacity>

@@ -35,6 +35,7 @@ import SeguridadUsuario from "./src/screens/user/SeguridadUsuario";
 import MascotaDetalles from "./src/screens/pets/MascotaDetalles";
 import PeticionPaseo from "./src/screens/cliente/PeticionPaseo";
 import MapaCliente from "./src/screens/cliente/MapaCliente";
+import AgregarDireccionCliente from "./src/screens/cliente/agregarDireccionCliente";
 import MapaPaseador from "./src/screens/walker/MapaPaseador";
 import GananciasPaseador from "./src/screens/walker/GananciasPaseador";
 import GananciasDetalle  from "./src/screens/walker/stats/GananciasDetalle";
@@ -44,7 +45,8 @@ import EstrellasDetalle  from "./src/screens/walker/stats/EstrellasDetalle";
 import PaseosPaseador from "./src/screens/walker/PaseosPaseador";
 import PerfilPaseador from "./src/screens/walker/PerfilPaseador";
 import RutaPaseo from "./src/screens/walker/RutaPaseo";
-import NotificacionesUsuario from "./src/screens/user/NotificacionesUsuario";
+import NotificacionesPaseador from "./src/screens/user/NotificacionesPaseador";
+import NotificacionesCliente from "./src/screens/cliente/notificaciones/NotificacionesCliente";
 import NotificacionDetalle from "./src/screens/user/NotificacionDetalle";
 import BilleteraUsuario from "./src/screens/user/BilleteraUsuario";
 import AyudaUsuario from "./src/screens/user/AyudaUsuario";
@@ -134,6 +136,7 @@ export default function App() {
         <Stack.Screen name="MascotaDetalles" component={MascotaDetalles} />
         <Stack.Screen name="PeticionPaseo" component={PeticionPaseo} />
         <Stack.Screen name="MapaCliente" component={MapaCliente} />
+        <Stack.Screen name="AgregarDireccionCliente" component={AgregarDireccionCliente} />
         <Stack.Screen name="MapaPaseador" component={MapaPaseador} />
         <Stack.Screen name="GananciasPaseador"  component={GananciasPaseador} />
         <Stack.Screen name="GananciasDetalle"   component={GananciasDetalle} />
@@ -143,7 +146,8 @@ export default function App() {
         <Stack.Screen name="PaseosPaseador" component={PaseosPaseador} />
         <Stack.Screen name="PerfilPaseador" component={PerfilPaseador} />
         <Stack.Screen name="RutaPaseo" component={RutaPaseo} />
-        <Stack.Screen name="NotificacionesUsuario" component={NotificacionesUsuario} />
+        <Stack.Screen name="NotificacionesCliente" component={NotificacionesCliente} />
+        <Stack.Screen name="NotificacionesPaseador" component={NotificacionesPaseador} />
         <Stack.Screen name="NotificacionDetalle" component={NotificacionDetalle} />
         <Stack.Screen name="BilleteraUsuario" component={BilleteraUsuario} />
         <Stack.Screen name="AyudaUsuario" component={AyudaUsuario} />

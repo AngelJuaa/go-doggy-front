@@ -21,6 +21,11 @@ export const styles = StyleSheet.create({
     fontSize: ms(16),
     paddingVertical: vs(2),
   },
+  errorText: {
+    color: "#cc0000",
+    fontSize: ms(13),
+    marginTop: vs(4),
+  },
   photoRow: {
     flexDirection: "row",
     alignItems: "center",

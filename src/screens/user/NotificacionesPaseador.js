@@ -89,14 +89,14 @@ export default function NotificacionesPaseador({ navigation }) {
       <View style={styles.bottomTab}>
         <TouchableOpacity
           style={styles.tabItem}
-          onPress={() => navigation.navigate("Inicio_cliente")}
+          onPress={() => navigation.navigate("Inicio_paseador")}
         >
           <Text style={styles.tabIcon}>🏠</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.tabItem}
-          onPress={() => navigation.navigate("Servicio_Cliente_Inicio")}
+          onPress={() => navigation.navigate("PaseosPaseador")}
         >
           <Text style={styles.tabIcon}>✅</Text>
         </TouchableOpacity>
@@ -108,7 +108,7 @@ export default function NotificacionesPaseador({ navigation }) {
 
         <TouchableOpacity
           style={styles.tabItem}
-          onPress={() => navigation.navigate("PerfilUsuario")}
+          onPress={() => navigation.navigate("PerfilPaseador")}
         >
           <Text style={styles.tabIcon}>👤</Text>
         </TouchableOpacity>

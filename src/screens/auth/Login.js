@@ -49,21 +49,25 @@ export default function Login({ route, navigation }) {
       return;
     }
 
-    console.log("🚀 Intentando login...");
+    console.log("🚀 Intentando login como:", tipo);
 
     try {
-      const response = await fetch(`${API_URL}/login`, {
+      // Seleccionar endpoint y campos según tipo
+      const endpoint = tipo === "paseador" ? "/login-paseador" : "/login";
+      const bodyData = tipo === "paseador" 
+        ? { correo: email, contrasenia: password }
+        : { email, password };
+
+      const response = await fetch(`${API_URL}${endpoint}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
+        body: JSON.stringify(bodyData),
       });
 
       const data = await response.json();
+
       console.log("Respuesta:", data);
 
       if (response.ok) {
@@ -72,14 +76,16 @@ export default function Login({ route, navigation }) {
         setEmail("");
         setPassword("");
 
-        // 💾 Guardar sesión
-        storage.setItem("usuario", JSON.stringify(data.usuario));
+        // 💾 Guardar sesión con la clave correcta
+        const keyToStore = tipo === "paseador" ? "paseador" : "usuario";
+        const userToStore = tipo === "paseador" ? data.paseador : data.usuario;
+        storage.setItem(keyToStore, JSON.stringify(userToStore));
 
         // 🔀 Navegación
-        if (tipo === "cliente") {
-          navigation.navigate("Inicio_cliente");
-        } else {
+        if (tipo === "paseador") {
           navigation.navigate("Inicio_paseador");
+        } else {
+          navigation.navigate("Inicio_cliente");
         }
       } else {
         // ❌ Login fallido
@@ -104,19 +110,17 @@ export default function Login({ route, navigation }) {
   return (
     <View style={styles.container}>
       {/* 🔙 Botón Volver */}
-      <TouchableOpacity
-        style={{
-          position: "absolute",
-          top: vs(50),
-          left: s(20),
-          zIndex: 10,
-          padding: s(10),
+      <TouchableOpacity 
+        style={styles.backButton} 
+        onPress={() => {
+          if (navigation.canGoBack()) {
+            navigation.goBack();
+          } else {
+            navigation.navigate("Welcome");
+          }
         }}
-        onPress={() => navigation.goBack()}
       >
-        <Text style={{ fontSize: ms(15), color: "#333", fontWeight: "bold" }}>
-          ← Volver
-        </Text>
+        <Text style={styles.backButtonText}>← Volver</Text>
       </TouchableOpacity>
 
       <View style={styles.header}></View>
