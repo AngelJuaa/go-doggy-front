@@ -43,11 +43,13 @@ import PaseosDetalle     from "./src/screens/walker/stats/PaseosDetalle";
 import EstrellasDetalle  from "./src/screens/walker/stats/EstrellasDetalle";
 import PaseosPaseador from "./src/screens/walker/PaseosPaseador";
 import PerfilPaseador from "./src/screens/walker/PerfilPaseador";
+import EditarPerfilPaseador from "./src/screens/walker/EditarPerfilPaseador";
 import RutaPaseo from "./src/screens/walker/RutaPaseo";
 import NotificacionesUsuario from "./src/screens/user/NotificacionesUsuario";
 import NotificacionDetalle from "./src/screens/user/NotificacionDetalle";
 import BilleteraUsuario from "./src/screens/user/BilleteraUsuario";
 import AyudaUsuario from "./src/screens/user/AyudaUsuario";
+import HistorialCliente from "./src/screens/cliente/HistorialCliente";
 
 const Stack = createStackNavigator();
 
@@ -142,11 +144,13 @@ export default function App() {
         <Stack.Screen name="EstrellasDetalle"   component={EstrellasDetalle} />
         <Stack.Screen name="PaseosPaseador" component={PaseosPaseador} />
         <Stack.Screen name="PerfilPaseador" component={PerfilPaseador} />
+        <Stack.Screen name="EditarPerfilPaseador" component={EditarPerfilPaseador} />
         <Stack.Screen name="RutaPaseo" component={RutaPaseo} />
         <Stack.Screen name="NotificacionesUsuario" component={NotificacionesUsuario} />
         <Stack.Screen name="NotificacionDetalle" component={NotificacionDetalle} />
         <Stack.Screen name="BilleteraUsuario" component={BilleteraUsuario} />
         <Stack.Screen name="AyudaUsuario" component={AyudaUsuario} />
+        <Stack.Screen name="HistorialCliente" component={HistorialCliente} />
       </Stack.Navigator>
     </NavigationContainer>
   );

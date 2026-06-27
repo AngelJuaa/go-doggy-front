@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, Image, TouchableOpacity, ScrollView, Alert } from "react-native";
+import { View, Text, Image, TouchableOpacity, ScrollView } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
+import useToast from "../../../../utils/useToast";
 import { styles } from "./ServicioClienteAccesoriosStyles";
 
 export default function Servicio_Cliente_Accesorios({ route, navigation }) {
@@ -9,6 +10,7 @@ export default function Servicio_Cliente_Accesorios({ route, navigation }) {
   // ========================
   const [productos, setProductos] = useState([]);
   const [hoveredTab, setHoveredTab] = useState(null);
+  const { showToast, ToastComponent } = useToast();
 
   // ========================
   // FUNCIONES
@@ -138,7 +140,7 @@ export default function Servicio_Cliente_Accesorios({ route, navigation }) {
           onPressIn={() => setHoveredTab(2)}
           onPressOut={() => setHoveredTab(null)}
           onPress={() => {
-            Alert.alert("Próximamente", "El mapa estará disponible pronto.")
+            showToast("El mapa estará disponible pronto.", "info")
           }}
         >
           {hoveredTab === 2 && <Text style={styles.tabLabel}>Mapa</Text>}
@@ -154,7 +156,7 @@ export default function Servicio_Cliente_Accesorios({ route, navigation }) {
           onPressIn={() => setHoveredTab(3)}
           onPressOut={() => setHoveredTab(null)}
           onPress={() => {
-            Alert.alert("Próximamente", "Las notificaciones estarán disponibles pronto.")
+            showToast("Las notificaciones estarán disponibles pronto.", "info")
           }}
         >
           {hoveredTab === 3 && (
@@ -166,6 +168,7 @@ export default function Servicio_Cliente_Accesorios({ route, navigation }) {
           />
         </TouchableOpacity>
       </View>
+      {ToastComponent}
     </View>
   );
 }

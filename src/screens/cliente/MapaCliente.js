@@ -7,10 +7,182 @@ import {
   ScrollView,
   ActivityIndicator,
   Platform,
-  Alert,
+  StyleSheet,
+  TextInput,
 } from "react-native";
+import useToast from "../../utils/useToast";
 import { styles } from "./MapaClienteStyles";
+
+const finStyles = StyleSheet.create({
+  overlay:         { position: "absolute", bottom: 72, left: 0, right: 0, backgroundColor: "rgba(10,20,15,0.96)", padding: 20, zIndex: 200 },
+  title:           { color: "#fff", fontSize: 18, fontWeight: "bold", textAlign: "center", marginBottom: 12 },
+  costoRow:        { flexDirection: "row", gap: 10, marginBottom: 14 },
+  costoBox:        { flex: 1, backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 10, padding: 10, alignItems: "center" },
+  costoLabel:      { color: "#aaa", fontSize: 11, marginBottom: 4 },
+  costoValor:      { color: "#7CEDA3", fontSize: 16, fontWeight: "bold" },
+  ratingLabel:     { color: "#ddd", fontSize: 14, textAlign: "center", marginBottom: 8 },
+  starsRow:        { flexDirection: "row", justifyContent: "center", gap: 8, marginBottom: 10 },
+  star:            { fontSize: 34 },
+  comentarioInput: { backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 10, padding: 10, color: "#fff", fontSize: 13, marginBottom: 12, minHeight: 50 },
+  btns:            { flexDirection: "row", justifyContent: "space-around", gap: 10 },
+  btn:             { paddingVertical: 12, paddingHorizontal: 20, borderRadius: 14, alignItems: "center" },
+  btnTxt:          { fontWeight: "bold", fontSize: 14, color: "#1A1A1A" },
+  skipText:        { color: "#aaa", fontSize: 12, textAlign: "center", marginTop: 12, textDecorationLine: "underline" },
+  calificadoMsg:   { color: "#FFD700", fontSize: 16, textAlign: "center", marginVertical: 12, fontWeight: "bold" },
+});
+
+const cardStyles = StyleSheet.create({
+  card: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 2,
+    borderTopColor: "#99D9C1",
+    gap: 12,
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#99D9C1",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarText: { fontSize: 20, fontWeight: "bold", color: "#fff" },
+  info: { flex: 1 },
+  nombre: { fontSize: 15, fontWeight: "700", color: "#1a1a1a" },
+  calif: { fontSize: 12, color: "#555", marginTop: 2 },
+  badge: {
+    backgroundColor: "#EDF9F4",
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  badgeTxt: { fontSize: 12, fontWeight: "700", color: "#22a06b" },
+});
+
 import { getSocket } from "../../utils/socket";
+import { API_URL, apiFetch } from "../../utils/api";
+import storage from "../../utils/storage";
+import AgregarDireccionModal from "../../components/AgregarDireccionModal";
+
+const enCaminoStyles = StyleSheet.create({
+  strip: {
+    backgroundColor: "#EDF9F4",
+    borderTopWidth: 1,
+    borderTopColor: "#99D9C1",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  msg: { flex: 1, fontSize: 13, color: "#1a4731", fontWeight: "600" },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#007bff" },
+});
+
+const addrStyles = StyleSheet.create({
+  section: {
+    width: "95%",
+    maxWidth: 420,
+    alignSelf: "center",
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  sectionTitle: { fontSize: 15, fontWeight: "bold", color: "#333" },
+  addBtn: {
+    backgroundColor: "#22a06b",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  addBtnTxt: { color: "#fff", fontSize: 13, fontWeight: "bold" },
+  emptyTxt:  { fontSize: 13, color: "#999", textAlign: "center", paddingVertical: 12 },
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    shadowColor: "#000",
+    shadowOpacity: 0.07,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+    borderLeftWidth: 3,
+    borderLeftColor: "#99D9C1",
+  },
+  cardBody:  { flex: 1 },
+  cardName:  { fontSize: 14, fontWeight: "700", color: "#222", marginBottom: 2 },
+  cardAddr:  { fontSize: 13, color: "#444", marginBottom: 1 },
+  cardSub:   { fontSize: 12, color: "#777" },
+  cardChip:  {
+    fontSize: 11,
+    color: "#555",
+    backgroundColor: "#f0f0f0",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginTop: 4,
+    alignSelf: "flex-start",
+  },
+  deleteBtn:    { padding: 6, marginLeft: 4 },
+  deleteBtnTxt: { fontSize: 18, color: "#cc4444", fontWeight: "bold" },
+});
+
+const refinarStyles = StyleSheet.create({
+  banner: {
+    position: "absolute",
+    bottom: 70,
+    left: 0,
+    right: 0,
+    backgroundColor: "#1a4731",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    zIndex: 600,
+    shadowColor: "#000",
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: -3 },
+    elevation: 10,
+  },
+  hint: {
+    color: "#d0f5e5",
+    fontSize: 13,
+    fontWeight: "600",
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  btns: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  saveBtn: {
+    flex: 1,
+    backgroundColor: "#22a06b",
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: "center",
+  },
+  saveTxt: { color: "#fff", fontWeight: "bold", fontSize: 14 },
+  cancelBtn: {
+    flex: 1,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: "center",
+  },
+  cancelTxt: { color: "#d0f5e5", fontWeight: "600", fontSize: 14 },
+});
 
 const DEFAULT_LOCATION = { latitude: 20.907715, longitude: -100.707582 };
 
@@ -57,10 +229,25 @@ export default function MapaCliente({ route, navigation }) {
   const [expanded, setExpanded] = useState(false);
   const [estado, setEstado]     = useState("esperando");
   const [error, setError]       = useState(null);
+  const [paseadorInfo, setPaseadorInfo] = useState(null);
+  const [servicioData, setServicioData] = useState(null);
+  const [mascotaNombre, setMascotaNombre] = useState(null);
+  const [usuarioId, setUsuarioId]           = useState(null);
+  const [direcciones, setDirecciones]       = useState([]);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+  const [loadingDirId, setLoadingDirId]     = useState(null);
+  const [selectedDirId, setSelectedDirId]   = useState(null);
+  const [rating, setRating] = useState(0);
+  const [comentario, setComentario] = useState("");
+  const [calificando, setCalificando] = useState(false);
+  const [calificado, setCalificado] = useState(false);
+  const paseadorIdRef = useRef(null);
+  const { showToast, ToastComponent } = useToast();
 
-  const watchIdRef  = useRef(null);
-  const iframeRef   = useRef(null);
-  const lastLocRef  = useRef(DEFAULT_LOCATION);
+  const watchIdRef    = useRef(null);
+  const iframeRef     = useRef(null);
+  const lastLocRef    = useRef(DEFAULT_LOCATION);
+  const scrollViewRef = useRef(null);
   const rutaRef     = useRef([]);
   const isWeb       = Platform.OS === "web";
   const socket      = getSocket();
@@ -96,6 +283,12 @@ export default function MapaCliente({ route, navigation }) {
       window.parent.postMessage({type:'markerMoved', latitude:lat, longitude:lng}, '*');
     });
 
+    // Click en cualquier parte del mapa mueve el pin ahí
+    map.on('click', function(e) {
+      clienteMarker.setLatLng(e.latlng);
+      window.parent.postMessage({type:'markerMoved', latitude:e.latlng.lat, longitude:e.latlng.lng}, '*');
+    });
+
     // Marcador del paseador (emoji perro)
     const paseadorIcon = L.divIcon({
       html:'<div style="font-size:28px;line-height:28px">🐕</div>',
@@ -111,6 +304,7 @@ export default function MapaCliente({ route, navigation }) {
 
       if (d.type === 'updateCliente') {
         clienteMarker.setLatLng([d.lat, d.lng]);
+        map.setView([d.lat, d.lng], 16, {animate:true});
       }
 
       if (d.type === 'updatePaseador') {
@@ -120,7 +314,10 @@ export default function MapaCliente({ route, navigation }) {
         } else {
           paseadorMarker.setLatLng([d.lat, d.lng]);
         }
-        map.setView([d.lat, d.lng], map.getZoom(), {animate:true});
+        // Mostrar paseador y cliente al mismo tiempo
+        const clienteLatlng = clienteMarker.getLatLng();
+        const bounds = L.latLngBounds([paseadorMarker.getLatLng(), clienteLatlng]);
+        map.fitBounds(bounds, {padding: [60, 60], maxZoom: 17, animate: true});
         if (d.route && d.route.length > 1) {
           if (routeLine) map.removeLayer(routeLine);
           routeLine = L.polyline(d.route, {color:'#00ff99', weight:4}).addTo(map);
@@ -165,21 +362,67 @@ export default function MapaCliente({ route, navigation }) {
     };
   }, [isWeb]);
 
+  // ─── Cargar estado actual del servicio al montar ─────────────────────────────
+  useEffect(() => {
+    if (!servicioId) return;
+    fetch(`${API_URL}/servicio/${servicioId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        const ESTADO_MAP = { creado: "esperando", en_camino: "en_camino", activo: "activo", completado: "finalizado" };
+        if (ESTADO_MAP[data.estado]) setEstado(ESTADO_MAP[data.estado]);
+        if (data.paseador_id) paseadorIdRef.current = data.paseador_id;
+        if (data.paseador_nombre) {
+          setPaseadorInfo({
+            nombre_completo:       data.paseador_nombre,
+            url_foto_perfil:       data.paseador_foto,
+            telefono:              data.paseador_telefono,
+            calificacion_promedio: data.paseador_calificacion,
+          });
+        }
+        setServicioData({
+          costo_total:  parseFloat(data.costo_total || data.costo_estimado || 0),
+          metodo_pago:  data.metodo_pago || "Efectivo",
+          paseador_id:  data.paseador_id,
+        });
+        if (data.mascota_nombre) setMascotaNombre(data.mascota_nombre);
+        // Si ya fue calificado, marcar
+        if (data.estado === "completado") {
+          fetch(`${API_URL}/calificacion/servicio/${servicioId}`)
+            .then((r) => r.json())
+            .then((c) => { if (c.calificado) setCalificado(true); })
+            .catch(() => {});
+        }
+      })
+      .catch(() => {});
+  }, [servicioId]);
+
   // ─── Socket: seguimiento del paseador en tiempo real ─────────────────────────
   useEffect(() => {
     if (!servicioId) return;
     socket.emit("cliente:watch", { servicioId });
 
-    socket.on("servicio:aceptado", () => {
+    socket.on("servicio:aceptado", (data) => {
       setEstado("en_camino");
-      Alert.alert("¡Paseador en camino!", "El paseador aceptó tu solicitud y va hacia ti.");
+      showToast("¡Tu paseador aceptó la solicitud y está en camino! 🐾", "success");
+      if (data?.paseador) {
+        setPaseadorInfo(data.paseador);
+        if (data.paseador.usuario_id) paseadorIdRef.current = data.paseador.usuario_id;
+      }
+      // Mostrar marcador inicial del paseador cerca del cliente
+      const base = lastLocRef.current;
+      const initLat = base.latitude  + 0.003;
+      const initLng = base.longitude + 0.003;
+      setPaseadorPos({ latitude: initLat, longitude: initLng });
+      rutaRef.current = [[initLat, initLng]];
+      iframeRef.current?.contentWindow?.postMessage(
+        { type: "updatePaseador", lat: initLat, lng: initLng, route: [] }, "*"
+      );
     });
 
     socket.on("paseador:location", (coord) => {
       setPaseadorPos({ latitude: coord.lat, longitude: coord.lng });
       rutaRef.current = [...rutaRef.current, [coord.lat, coord.lng]];
       setRutaPaseador([...rutaRef.current]);
-      setEstado("activo");
       iframeRef.current?.contentWindow?.postMessage({
         type:  "updatePaseador",
         lat:   coord.lat,
@@ -188,18 +431,27 @@ export default function MapaCliente({ route, navigation }) {
       }, "*");
     });
 
-    socket.on("servicio:finalizado", () => {
+    socket.on("servicio:finalizado", (data) => {
       setEstado("finalizado");
-      Alert.alert("¡Paseo completado!", "El paseo ha finalizado.", [
-        { text: "Calificar", onPress: () => navigation.navigate("Calificaciones") },
-        { text: "Inicio",    onPress: () => navigation.navigate("Inicio_cliente") },
-      ]);
+      if (data?.costo_total !== undefined) {
+        setServicioData((prev) => ({
+          ...prev,
+          costo_total: parseFloat(data.costo_total || 0),
+          metodo_pago: data.metodo_pago || prev?.metodo_pago || "Efectivo",
+        }));
+      }
+    });
+
+    socket.on("servicio:iniciado", () => {
+      setEstado("activo");
+      showToast("🐾 ¡Tu paseador ya recogió a tu mascota! El paseo comenzó.", "success");
     });
 
     return () => {
       socket.off("servicio:aceptado");
       socket.off("paseador:location");
       socket.off("servicio:finalizado");
+      socket.off("servicio:iniciado");
     };
   }, [servicioId]);
 
@@ -245,6 +497,117 @@ export default function MapaCliente({ route, navigation }) {
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
   }, [isWeb]);
+
+  // ─── Cargar direcciones guardadas ───────────────────────────────────────────
+  useEffect(() => {
+    const u = JSON.parse(storage.getItem("usuario") || "{}");
+    if (!u.usuario_id) return;
+    setUsuarioId(u.usuario_id);
+    apiFetch(`/direcciones/${u.usuario_id}`)
+      .then((data) => setDirecciones(data || []))
+      .catch(() => {});
+  }, []);
+
+  const handleSelectDireccion = async (dir) => {
+    setLoadingDirId(dir.direccion_id);
+    setSelectedDirId(null);
+    let lat = null;
+    let lng = null;
+
+    if (dir.coordenadas_refinadas && dir.latitud && dir.longitud) {
+      // El usuario ya fijó la ubicación exacta arrastrando el pin — usarla directamente
+      lat = parseFloat(dir.latitud);
+      lng = parseFloat(dir.longitud);
+    } else {
+      // Aún no refinada: geocodificar para navegar a la zona aproximada
+      try {
+        const query = [dir.calle, dir.numero_exterior, dir.colonia, dir.codigo_postal]
+          .filter(Boolean).join(" ");
+        const params = new URLSearchParams({ q: query });
+        if (dir.codigo_postal) params.append("cp", dir.codigo_postal);
+        const data = await apiFetch(`/geocode/search?${params}`);
+        if (data && data.length > 0) {
+          lat = parseFloat(data[0].lat);
+          lng = parseFloat(data[0].lon);
+        }
+      } catch { /* silencioso */ }
+
+      // Fallback: coords guardadas si geocoding falla
+      if (!lat || !lng) {
+        lat = dir.latitud  ? parseFloat(dir.latitud)  : null;
+        lng = dir.longitud ? parseFloat(dir.longitud) : null;
+      }
+    }
+
+    setLoadingDirId(null);
+
+    if (!lat || !lng) {
+      showToast("No se encontraron coordenadas para esta dirección.", "warning");
+      return;
+    }
+
+    const pos = { latitude: lat, longitude: lng };
+    lastLocRef.current = pos;
+    setClientePos(pos);
+    setDisplayCoords(`Lat: ${lat.toFixed(6)}\nLng: ${lng.toFixed(6)}`);
+
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: "updateCliente", lat, lng }, "*"
+    );
+
+    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    showToast(`📍 ${dir.nombre_referencia || dir.calle}`, "success");
+
+    // Activar modo refinamiento: el usuario puede arrastrar el pin y guardar la ubicación exacta
+    setSelectedDirId(dir.direccion_id);
+  };
+
+  const guardarCoordsExactas = async () => {
+    if (!selectedDirId) return;
+    const lat = lastLocRef.current?.latitude;
+    const lng = lastLocRef.current?.longitude;
+    if (!lat || !lng) return;
+    try {
+      await apiFetch(`/direcciones/${selectedDirId}/coordenadas`, {
+        method: "PATCH",
+        body: JSON.stringify({ latitud: lat, longitud: lng }),
+      });
+      setDirecciones((prev) =>
+        prev.map((d) =>
+          d.direccion_id === selectedDirId
+            ? { ...d, latitud: lat, longitud: lng, coordenadas_refinadas: true }
+            : d
+        )
+      );
+      setSelectedDirId(null);
+      showToast("📍 Ubicación exacta guardada", "success");
+    } catch {
+      showToast("Error al guardar la ubicación", "error");
+    }
+  };
+
+  const handleDeleteDireccion = async (direccionId) => {
+    try {
+      await apiFetch(`/direcciones/${direccionId}`, { method: "DELETE" });
+      setDirecciones((prev) => prev.filter((d) => d.direccion_id !== direccionId));
+    } catch {
+      showToast("Error al eliminar dirección", "error");
+    }
+  };
+
+  const handleAddressSaved = (nuevaDireccion) => {
+    setDirecciones((prev) => [nuevaDireccion, ...prev]);
+  };
+
+  const handleLocationFromModal = (lat, lng) => {
+    const pos = { latitude: parseFloat(lat), longitude: parseFloat(lng) };
+    lastLocRef.current = pos;
+    setClientePos(pos);
+    setDisplayCoords(`Lat: ${pos.latitude.toFixed(6)}\nLng: ${pos.longitude.toFixed(6)}`);
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: "updateCliente", lat: pos.latitude, lng: pos.longitude }, "*"
+    );
+  };
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
   const locOrDefault = clientePos || DEFAULT_LOCATION;
@@ -293,6 +656,7 @@ export default function MapaCliente({ route, navigation }) {
         </View>
       ) : (
         <ScrollView
+          ref={scrollViewRef}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
@@ -366,14 +730,225 @@ export default function MapaCliente({ route, navigation }) {
 
             {!expanded && (
               <Text style={styles.instructions}>
-                {paseadorPos ? "🐕 Viendo al paseador" : "Arrastra el pin 📍"}
+                {paseadorPos
+                  ? "🐕 Viendo al paseador"
+                  : selectedDirId
+                  ? "📍 Toca el mapa para mover el pin a tu puerta"
+                  : "Arrastra el pin 📍"}
               </Text>
+            )}
+          </View>
+
+          {/* ─── DIRECCIONES GUARDADAS ─── */}
+          <View style={addrStyles.section}>
+            <View style={addrStyles.sectionHeader}>
+              <Text style={addrStyles.sectionTitle}>📍 Mis direcciones</Text>
+              <TouchableOpacity
+                style={addrStyles.addBtn}
+                onPress={() => setShowAddressModal(true)}
+              >
+                <Text style={addrStyles.addBtnTxt}>＋ Agregar</Text>
+              </TouchableOpacity>
+            </View>
+
+            {direcciones.length === 0 ? (
+              <Text style={addrStyles.emptyTxt}>No tienes direcciones guardadas aún.</Text>
+            ) : (
+              direcciones.map((dir) => {
+                const numStr = [
+                  dir.numero_exterior ? `#${dir.numero_exterior}` : "",
+                  dir.sufijo_numero   ? dir.sufijo_numero          : "",
+                  dir.numero_interior ? `Int. ${dir.numero_interior}` : "",
+                ].filter(Boolean).join(" ");
+                return (
+                  <TouchableOpacity
+                    key={dir.direccion_id}
+                    style={[addrStyles.card, loadingDirId === dir.direccion_id && { opacity: 0.6 }]}
+                    onPress={() => loadingDirId ? null : handleSelectDireccion(dir)}
+                    activeOpacity={0.75}
+                  >
+                    <View style={addrStyles.cardBody}>
+                      <Text style={addrStyles.cardName}>
+                        {dir.nombre_referencia || "Mi dirección"}
+                      </Text>
+                      <Text style={addrStyles.cardAddr}>
+                        {dir.calle}{numStr ? ` ${numStr}` : ""}
+                      </Text>
+                      {dir.colonia ? (
+                        <Text style={addrStyles.cardSub}>
+                          {dir.colonia}{dir.codigo_postal ? `, C.P. ${dir.codigo_postal}` : ""}
+                        </Text>
+                      ) : null}
+                      {dir.tipo_vivienda ? (
+                        <Text style={addrStyles.cardChip}>
+                          {dir.tipo_vivienda.replace(/_/g, " ")}
+                        </Text>
+                      ) : null}
+                      {dir.tiene_caseta ? (
+                        <Text style={addrStyles.cardChip}>🔒 Caseta de vigilancia</Text>
+                      ) : null}
+                    </View>
+                    {loadingDirId === dir.direccion_id ? (
+                      <ActivityIndicator size="small" color="#22a06b" style={{ marginLeft: 8 }} />
+                    ) : (
+                      <TouchableOpacity
+                        style={addrStyles.deleteBtn}
+                        onPress={() => handleDeleteDireccion(dir.direccion_id)}
+                      >
+                        <Text style={addrStyles.deleteBtnTxt}>✕</Text>
+                      </TouchableOpacity>
+                    )}
+                  </TouchableOpacity>
+                );
+              })
             )}
           </View>
         </ScrollView>
       )}
 
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+      {/* MODAL PASEO FINALIZADO */}
+      {estado === "finalizado" && (
+        <View style={finStyles.overlay}>
+          <Text style={finStyles.title}>✅ ¡Paseo completado!</Text>
+
+          {!calificado ? (
+            <>
+              <Text style={finStyles.ratingLabel}>Califica al paseador</Text>
+              <View style={finStyles.starsRow}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <TouchableOpacity key={n} onPress={() => setRating(n)}>
+                    <Text style={[finStyles.star, { color: n <= rating ? "#FFD700" : "#555" }]}>★</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TextInput
+                style={finStyles.comentarioInput}
+                placeholder="Comentario (opcional)"
+                placeholderTextColor="#aaa"
+                value={comentario}
+                onChangeText={setComentario}
+                multiline
+                numberOfLines={2}
+              />
+              <View style={finStyles.btns}>
+                <TouchableOpacity
+                  style={[finStyles.btn, { backgroundColor: rating > 0 ? "#FFD700" : "#888", flex: 1 }]}
+                  disabled={calificando || rating === 0}
+                  onPress={async () => {
+                    if (rating === 0) { showToast("Selecciona al menos 1 estrella", "warning"); return; }
+                    const usuario = JSON.parse(storage.getItem("usuario") || "{}");
+                    const paseadorId = paseadorIdRef.current || servicioData?.paseador_id;
+                    if (!paseadorId) { showToast("No se pudo identificar al paseador", "error"); return; }
+                    setCalificando(true);
+                    try {
+                      await apiFetch("/calificacion", {
+                        method: "POST",
+                        body: JSON.stringify({
+                          servicio_id:           servicioId,
+                          califica_usuario_id:   usuario.usuario_id,
+                          calificado_usuario_id: paseadorId,
+                          valor:                 rating,
+                          comentario:            comentario,
+                        }),
+                      });
+                      setCalificado(true);
+                      showToast("¡Calificación enviada! ⭐", "success");
+                    } catch (e) {
+                      showToast(e.message || "Error al enviar calificación", "error");
+                    } finally {
+                      setCalificando(false);
+                    }
+                  }}
+                >
+                  {calificando
+                    ? <ActivityIndicator color="#1A1A1A" />
+                    : <Text style={finStyles.btnTxt}>⭐ Enviar calificación</Text>
+                  }
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity onPress={() => navigation.navigate("HistorialCliente")}>
+                <Text style={finStyles.skipText}>Omitir y ver historial →</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <Text style={finStyles.calificadoMsg}>{"⭐".repeat(rating)} Calificación enviada</Text>
+              <TouchableOpacity
+                style={[finStyles.btn, { backgroundColor: "#99D9C1", alignSelf: "stretch", marginTop: 12 }]}
+                onPress={() => navigation.navigate("HistorialCliente")}
+              >
+                <Text style={finStyles.btnTxt}>📋 Ver historial de paseos</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      )}
+
+      {/* TARJETA DEL PASEADOR — aparece al ser aceptado */}
+      {paseadorInfo && estado !== "esperando" && estado !== "finalizado" && (
+        <View style={cardStyles.card}>
+          <View style={cardStyles.avatar}>
+            <Text style={cardStyles.avatarText}>
+              {paseadorInfo.nombre_completo?.charAt(0)?.toUpperCase() || "P"}
+            </Text>
+          </View>
+          <View style={cardStyles.info}>
+            <Text style={cardStyles.nombre}>{paseadorInfo.nombre_completo}</Text>
+            <Text style={cardStyles.calif}>
+              {"⭐".repeat(Math.min(5, Math.round(parseFloat(paseadorInfo.calificacion_promedio) || 0)))}
+              {"  "}{(parseFloat(paseadorInfo.calificacion_promedio) || 0).toFixed(1)} / 5
+            </Text>
+          </View>
+          <View style={cardStyles.badge}>
+            <Text style={cardStyles.badgeTxt}>
+              {estado === "en_camino" ? "🚶 En camino" : "🐾 En paseo"}
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {/* DETALLE EN CAMINO — strip con nombre de mascota */}
+      {servicioId && estado === "en_camino" && (
+        <View style={enCaminoStyles.strip}>
+          <View style={enCaminoStyles.dot} />
+          <Text style={enCaminoStyles.msg}>
+            {mascotaNombre
+              ? `Tu paseador va en camino a recoger a ${mascotaNombre}`
+              : "Tu paseador va en camino a recoger a tu mascota"}
+          </Text>
+        </View>
+      )}
+
+      {/* BANNER REFINAR UBICACIÓN */}
+      {selectedDirId && (
+        <View style={refinarStyles.banner}>
+          <Text style={refinarStyles.hint}>
+            Toca el mapa 📍 en tu puerta exacta, luego toca Guardar
+          </Text>
+          <View style={refinarStyles.btns}>
+            <TouchableOpacity style={refinarStyles.saveBtn} onPress={guardarCoordsExactas}>
+              <Text style={refinarStyles.saveTxt}>✓ Guardar ubicación exacta</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={refinarStyles.cancelBtn} onPress={() => setSelectedDirId(null)}>
+              <Text style={refinarStyles.cancelTxt}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {ToastComponent}
+
+      {/* MODAL AGREGAR DIRECCIÓN */}
+      <AgregarDireccionModal
+        visible={showAddressModal}
+        onClose={() => setShowAddressModal(false)}
+        onSaved={handleAddressSaved}
+        onLocationChange={handleLocationFromModal}
+        currentLat={clientePos?.latitude ?? lastLocRef.current.latitude}
+        currentLng={clientePos?.longitude ?? lastLocRef.current.longitude}
+      />
 
       {/* BARRA INFERIOR CLIENTE */}
       <View style={styles.bottomTab}>

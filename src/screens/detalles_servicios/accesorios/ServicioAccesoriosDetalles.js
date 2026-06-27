@@ -1,10 +1,12 @@
-import React, { useState } from "react";
-import { View, Text, Image, ScrollView, TouchableOpacity, Alert } from "react-native";
+import React from "react";
+import { View, Text, Image, ScrollView, TouchableOpacity } from "react-native";
 import { styles } from "./ServicioAccesoriosDetallesStyles";
+import useToast from "../../../utils/useToast";
 
 export default function Servicio_Detalles_Accesorios({ route, navigation }) {
   const { accesorio } = route.params || {};
 
+  const { showToast, ToastComponent } = useToast();
   const regresar = () => navigation.goBack();
 
   // ========================
@@ -79,18 +81,19 @@ export default function Servicio_Detalles_Accesorios({ route, navigation }) {
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={styles.agregarButton}
-            onPress={() => Alert.alert("Carrito", `"${accesorioData.nombre}" agregado al carrito.\n${accesorioData.envio}`)}
+            onPress={() => showToast(`"${accesorioData.nombre}" agregado al carrito.`, "success")}
           >
             <Text style={styles.buttonText}>Agregar al Carrito</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.contactButton}
-            onPress={() => Alert.alert("Contactar Vendedor", accesorioData.garantia)}
+            onPress={() => showToast(accesorioData.garantia, "info")}
           >
             <Text style={styles.buttonText}>Contactar Vendedor</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
+      {ToastComponent}
     </View>
   );
 }

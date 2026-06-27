@@ -1,9 +1,13 @@
 import React, { useState } from "react";
-import { View, Text, Image, ScrollView, TouchableOpacity, Alert } from "react-native";
+import { View, Text, Image, ScrollView, TouchableOpacity } from "react-native";
 import { styles } from "./ServicioPaseadorDetallesStyles";
+import useToast from "../../../utils/useToast";
+import ConfirmModal from "../../../components/ConfirmModal";
 
 export default function Servicio_Detalles_Paseador({ route, navigation }) {
   const { paseador } = route.params || {};
+  const [confirmReserva, setConfirmReserva] = useState(false);
+  const { showToast, ToastComponent } = useToast();
 
   const regresar = () => navigation.goBack();
 
@@ -91,21 +95,28 @@ export default function Servicio_Detalles_Paseador({ route, navigation }) {
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={styles.contactButton}
-            onPress={() => Alert.alert("Contactar", `Contactando a ${paseadorData.nombre}\nTel: ${paseadorData.telefono || "No disponible"}`)}
+            onPress={() => showToast(`Contactando a ${paseadorData.nombre} — Tel: ${paseadorData.telefono || "No disponible"}`, "info")}
           >
             <Text style={styles.buttonText}>Contactar</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.reservarButton}
-            onPress={() => Alert.alert("Reservar", `¿Deseas reservar un paseo con ${paseadorData.nombre}?`, [
-              { text: "Cancelar", style: "cancel" },
-              { text: "Confirmar", onPress: () => Alert.alert("¡Reserva enviada!", "Tu solicitud ha sido enviada al paseador.") },
-            ])}
+            onPress={() => setConfirmReserva(true)}
           >
             <Text style={styles.buttonText}>Reservar</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
+      <ConfirmModal
+        visible={confirmReserva}
+        title="Reservar paseo"
+        message={`¿Deseas reservar un paseo con ${paseadorData.nombre}?`}
+        confirmText="Confirmar"
+        cancelText="Cancelar"
+        onConfirm={() => { setConfirmReserva(false); showToast("¡Reserva enviada! Tu solicitud ha sido enviada al paseador.", "success"); }}
+        onCancel={() => setConfirmReserva(false)}
+      />
+      {ToastComponent}
     </View>
   );
 }

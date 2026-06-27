@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from "react-native";
+import useToast from "../../utils/useToast";
+import ConfirmModal from "../../components/ConfirmModal";
 import { s, vs, ms } from "../../utils/responsive";
 import { getSocket } from "../../utils/socket";
 import { apiFetch } from "../../utils/api";
@@ -14,14 +16,20 @@ export default function InicioPaseador({ navigation }) {
   const [usuario, setUsuario]               = useState(null);
   const [miPos, setMiPos]                   = useState(null);
   const [servicioActivo, setServicioActivo] = useState(null);
+  const [estadoServicio, setEstadoServicio] = useState(null); // "en_camino" | "activo"
+  const [mascotaActiva, setMascotaActiva]   = useState(null);
   const [solicitudPendiente, setSolicitudPendiente] = useState(null);
   const [ruta, setRuta]                     = useState([]);
   const [conectado, setConectado]           = useState(false);
+  const [confirmFinalizar, setConfirmFinalizar] = useState(false);
+  const [clientePickup, setClientePickup]       = useState(null); // {lat,lng,texto}
+  const { showToast, ToastComponent } = useToast();
 
   const watchRef          = useRef(null);
   const servicioActivoRef = useRef(null);
   const iframeRef         = useRef(null);
   const rutaRef           = useRef([]);
+  const clientePickupRef  = useRef(null);
   const isWeb             = Platform.OS === "web";
   const socket            = getSocket();
 
@@ -52,6 +60,7 @@ export default function InicioPaseador({ navigation }) {
       {icon:paseadorIcon}).addTo(map).bindPopup('📍 Tu ubicación');
 
     let routeLine = null;
+    let clienteMarker = null;
 
     window.addEventListener('message', function(ev) {
       if (!ev.data) return;
@@ -59,11 +68,35 @@ export default function InicioPaseador({ navigation }) {
 
       if (d.type === 'updatePaseador') {
         paseadorMarker.setLatLng([d.lat, d.lng]);
-        map.setView([d.lat, d.lng], map.getZoom(), {animate:true});
+        if (!clienteMarker) map.setView([d.lat, d.lng], map.getZoom(), {animate:true});
         if (d.route && d.route.length > 1) {
           if (routeLine) map.removeLayer(routeLine);
           routeLine = L.polyline(d.route, {color:'#7CEDA3', weight:4}).addTo(map);
         }
+      }
+
+      if (d.type === 'updateClientePickup') {
+        const homeIcon = L.divIcon({
+          html: '<div style="font-size:30px;line-height:30px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.4))">🏠</div>',
+          className: '', iconSize: [30, 30], iconAnchor: [15, 30]
+        });
+        if (!clienteMarker) {
+          clienteMarker = L.marker([d.lat, d.lng], {icon: homeIcon})
+            .addTo(map)
+            .bindPopup(d.texto ? '📍 ' + d.texto : '🏠 Dirección del cliente')
+            .openPopup();
+        } else {
+          clienteMarker.setLatLng([d.lat, d.lng]);
+        }
+        // Ajustar vista para mostrar ambos marcadores
+        const bounds = L.latLngBounds(
+          [paseadorMarker.getLatLng(), [d.lat, d.lng]]
+        );
+        map.fitBounds(bounds, {padding: [60, 60], maxZoom: 17});
+      }
+
+      if (d.type === 'clearClientePickup') {
+        if (clienteMarker) { map.removeLayer(clienteMarker); clienteMarker = null; }
       }
     });
   </script>
@@ -74,13 +107,23 @@ export default function InicioPaseador({ navigation }) {
   useEffect(() => {
     const u = JSON.parse(storage.getItem("usuario") || "{}");
     setUsuario(u);
-    if (u.usuario_id) {
-      socket.emit("paseador:online", { paseadorId: u.usuario_id });
-      setConectado(true);
-    }
+
+    const registrarOnline = () => {
+      if (u.usuario_id) {
+        socket.emit("paseador:online", { paseadorId: u.usuario_id });
+        setConectado(true);
+      }
+    };
+
+    // Registrar en cada conexión/reconexión del socket
+    socket.on("connect", registrarOnline);
+    // Si el socket ya estaba conectado al montar el componente
+    if (socket.connected) registrarOnline();
+
     iniciarGPS();
     socket.on("servicio:nuevo", (data) => setSolicitudPendiente(data));
     return () => {
+      socket.off("connect", registrarOnline);
       socket.off("servicio:nuevo");
       detenerGPS();
     };
@@ -91,7 +134,7 @@ export default function InicioPaseador({ navigation }) {
     if (watchRef.current) return;
     const ok = await requestLocationPermission();
     if (!ok) {
-      Alert.alert("Permiso de ubicación", "Activa los permisos de ubicación para el seguimiento GPS.");
+      showToast("Activa los permisos de ubicación para el seguimiento GPS.", "warning");
       return;
     }
     const inicial = await getCurrentPosition();
@@ -128,20 +171,56 @@ export default function InicioPaseador({ navigation }) {
         type: "updatePaseador", lat: miPos[0], lng: miPos[1], route: rutaRef.current,
       }, "*");
     }
+    if (clientePickupRef.current && iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage({
+        type: "updateClientePickup",
+        lat:   clientePickupRef.current.lat,
+        lng:   clientePickupRef.current.lng,
+        texto: clientePickupRef.current.texto,
+      }, "*");
+    }
   };
+
+  // Enviar pickup al iframe después de cada re-render (más confiable que en el handler directo)
+  useEffect(() => {
+    if (!clientePickup || !iframeRef.current?.contentWindow) return;
+    iframeRef.current.contentWindow.postMessage({
+      type:  "updateClientePickup",
+      lat:   clientePickup.lat,
+      lng:   clientePickup.lng,
+      texto: clientePickup.texto,
+    }, "*");
+  }, [clientePickup]);
 
   // ─── Acciones de servicio ────────────────────────────────────────────────────
   const aceptarServicio = async () => {
-    if (!solicitudPendiente) return;
+    if (!solicitudPendiente || !usuario) return;
     try {
-      const servicio = await apiFetch(`/servicio/${solicitudPendiente.servicio_id}/aceptar`, { method: "PUT" });
+      const servicio = await apiFetch(`/servicio/${solicitudPendiente.servicio_id}/aceptar`, {
+        method: "PUT",
+        body: JSON.stringify({ paseadorId: usuario.usuario_id }),
+      });
       servicioActivoRef.current = servicio;
       setServicioActivo(servicio);
+      setEstadoServicio("en_camino");
+      setMascotaActiva(solicitudPendiente.mascota_nombre || null);
+
+      // Mostrar dirección de recogida del cliente en el mapa
+      if (solicitudPendiente.lat && solicitudPendiente.lng) {
+        const pickup = {
+          lat:   solicitudPendiente.lat,
+          lng:   solicitudPendiente.lng,
+          texto: solicitudPendiente.direccion_texto || null,
+        };
+        clientePickupRef.current = pickup;
+        setClientePickup(pickup); // dispara useEffect → postMessage después del re-render
+      }
+
       setSolicitudPendiente(null);
       iniciarGPS();
-      Alert.alert("✅ Servicio aceptado", "Tu ubicación GPS se está enviando al cliente.");
+      showToast("¡Servicio aceptado! Ve a recoger a la mascota.", "success");
     } catch (e) {
-      Alert.alert("Error", e.message);
+      showToast(e.message, "error");
     }
   };
 
@@ -151,26 +230,37 @@ export default function InicioPaseador({ navigation }) {
       await apiFetch(`/servicio/${solicitudPendiente.servicio_id}/rechazar`, { method: "PUT" });
       setSolicitudPendiente(null);
     } catch (e) {
-      Alert.alert("Error", e.message);
+      showToast(e.message, "error");
     }
   };
 
-  const finalizarServicio = () => {
-    Alert.alert("Finalizar paseo", "¿Estás seguro?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Finalizar",
-        onPress: () => {
-          socket.emit("servicio:finalizar", { servicioId: servicioActivo.servicio_id });
-          detenerGPS();
-          servicioActivoRef.current = null;
-          setServicioActivo(null);
-          rutaRef.current = [];
-          setRuta([]);
-          Alert.alert("¡Paseo finalizado!", "El cliente ha sido notificado.");
-        },
-      },
-    ]);
+  const finalizarServicio = () => setConfirmFinalizar(true);
+
+  const confirmarFinalizar = () => {
+    socket.emit("servicio:finalizar", { servicioId: servicioActivo.servicio_id });
+    detenerGPS();
+    servicioActivoRef.current = null;
+    clientePickupRef.current  = null;
+    setClientePickup(null);
+    setServicioActivo(null);
+    setEstadoServicio(null);
+    setMascotaActiva(null);
+    rutaRef.current = [];
+    setRuta([]);
+    iframeRef.current?.contentWindow?.postMessage({ type: "clearClientePickup" }, "*");
+    setConfirmFinalizar(false);
+    showToast("¡Paseo finalizado! El cliente ha sido notificado.", "success");
+  };
+
+  const iniciarPaseo = async () => {
+    if (!servicioActivo) return;
+    try {
+      await apiFetch(`/servicio/${servicioActivo.servicio_id}/iniciar-paseo`, { method: "PUT" });
+      setEstadoServicio("activo");
+      showToast("¡Paseo iniciado! El cliente fue notificado.", "success");
+    } catch (e) {
+      showToast(e.message || "Error al iniciar paseo", "error");
+    }
   };
 
   // ─── Render ──────────────────────────────────────────────────────────────────
@@ -195,10 +285,28 @@ export default function InicioPaseador({ navigation }) {
       {/* BANNER SERVICIO ACTIVO (sobre el mapa) */}
       {servicioActivo && (
         <View style={styles.activoBanner}>
-          <Text style={styles.activoText}>🐕 Paseo en curso — GPS activo</Text>
-          <TouchableOpacity style={styles.btnFinalizar} onPress={finalizarServicio}>
-            <Text style={styles.btnFinalizarText}>Finalizar</Text>
-          </TouchableOpacity>
+          {estadoServicio === "en_camino" ? (
+            <>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.activoText}>
+                  🚶 En camino a recoger a {mascotaActiva || "la mascota"}
+                </Text>
+                {clientePickup?.texto ? (
+                  <Text style={styles.activoDirText}>📍 {clientePickup.texto}</Text>
+                ) : null}
+              </View>
+              <TouchableOpacity style={styles.btnIniciarPaseo} onPress={iniciarPaseo}>
+                <Text style={styles.btnIniciarPaseoText}>🐾 Recoger mascota</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <Text style={styles.activoText}>🐕 Paseo en curso — GPS activo</Text>
+              <TouchableOpacity style={styles.btnFinalizar} onPress={finalizarServicio}>
+                <Text style={styles.btnFinalizarText}>Finalizar</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       )}
 
@@ -231,10 +339,13 @@ export default function InicioPaseador({ navigation }) {
             {/* Lado izquierdo: info del usuario */}
             <View style={styles.cardLeft}>
               <Text style={styles.cardUser}>
-                User{solicitudPendiente.dueno_id}
+                {solicitudPendiente.dueno_nombre || `Cliente #${solicitudPendiente.dueno_id}`}
               </Text>
               <Text style={styles.cardMascota}>
-                Mascota : {solicitudPendiente.mascota_nombre || `#${solicitudPendiente.mascota_id}`}
+                🐶 {solicitudPendiente.mascota_nombre || `Mascota #${solicitudPendiente.mascota_id}`}
+              </Text>
+              <Text style={styles.cardMascota}>
+                🦮 {solicitudPendiente.tipo_servicio}  ·  ⏱ {solicitudPendiente.duracion_minutos} min
               </Text>
             </View>
 
@@ -259,6 +370,18 @@ export default function InicioPaseador({ navigation }) {
       </View>
 
       {/* BARRA INFERIOR — 4 tabs sin Mapa */}
+      <ConfirmModal
+        visible={confirmFinalizar}
+        title="Finalizar paseo"
+        message="¿Estás seguro de que deseas finalizar el paseo?"
+        confirmText="Finalizar"
+        cancelText="Cancelar"
+        confirmColor="#E6B5B5"
+        onConfirm={confirmarFinalizar}
+        onCancel={() => setConfirmFinalizar(false)}
+      />
+      {ToastComponent}
+
       <View style={styles.bottomTab}>
         <TouchableOpacity style={styles.tabItem} onPress={() => {}}>
           <Text style={styles.tabIcon}>🏠</Text>
@@ -315,7 +438,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: s(14),
     paddingVertical: vs(8),
   },
-  activoText: { fontSize: ms(13), fontWeight: "bold", color: "#1a1a1a", flex: 1 },
+  activoText: { fontSize: ms(13), fontWeight: "bold", color: "#1a1a1a" },
+  activoDirText: { fontSize: ms(11), color: "#1a4731", marginTop: vs(2) },
   btnFinalizar: {
     backgroundColor: "#dc3545",
     borderRadius: s(8),
@@ -323,6 +447,14 @@ const styles = StyleSheet.create({
     paddingVertical: vs(6),
   },
   btnFinalizarText: { color: "#fff", fontWeight: "bold", fontSize: ms(12) },
+
+  btnIniciarPaseo: {
+    backgroundColor: "#22a06b",
+    borderRadius: s(8),
+    paddingHorizontal: s(12),
+    paddingVertical: vs(6),
+  },
+  btnIniciarPaseoText: { color: "#fff", fontWeight: "bold", fontSize: ms(12) },
 
   // Mapa
   mapWrapper: { flex: 1 },

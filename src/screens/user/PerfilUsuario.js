@@ -1,9 +1,11 @@
-﻿import React, { useState, useEffect } from "react";
-import { View, Text, Image, TouchableOpacity, ScrollView, Alert } from "react-native";
+﻿import React, { useState, useCallback, useRef } from "react";
+import { View, Text, Image, TouchableOpacity, ScrollView, Modal, StyleSheet } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { styles } from "./styles/PerfilUsuarioStyles";
 import { s, vs, ms } from "../../utils/responsive";
 import storage from "../../utils/storage";
-import { API_URL } from "../../utils/api";
+import { API_URL, apiFetch } from "../../utils/api";
+import useToast from "../../utils/useToast";
 
 export default function PerfilUsuario({ navigation }) {
   const [userName, setUserName] = useState("Usuario");
@@ -11,22 +13,29 @@ export default function PerfilUsuario({ navigation }) {
     require("../../../assets/perfil.png"),
   );
   const [hoveredTab, setHoveredTab] = useState(null);
+  const [modalMascotas, setModalMascotas] = useState(false);
+  const { showToast, ToastComponent } = useToast();
+  const mascotasRef = useRef([]);
 
-  useEffect(() => {
-    const usuarioStr = storage.getItem("usuario");
-    if (usuarioStr) {
-      const usuario = JSON.parse(usuarioStr);
-      const nombreCompleto = usuario.nombre_completo.split(" ");
-      const primerNombre = nombreCompleto[0] || "Usuario";
-      const primerApellido = nombreCompleto[1] || "";
-      setUserName(`${primerNombre} ${primerApellido}`.trim());
-      if (usuario.url_foto_perfil) {
-        setUserImage({
-          uri: `${API_URL}/uploads/${usuario.url_foto_perfil}`,
-        });
+  useFocusEffect(
+    useCallback(() => {
+      const usuarioStr = storage.getItem("usuario");
+      if (usuarioStr) {
+        const usuario = JSON.parse(usuarioStr);
+        const nombreCompleto = usuario.nombre_completo.split(" ");
+        const primerNombre = nombreCompleto[0] || "Usuario";
+        const primerApellido = nombreCompleto[1] || "";
+        setUserName(`${primerNombre} ${primerApellido}`.trim());
+        if (usuario.url_foto_perfil) {
+          setUserImage({ uri: `${API_URL}/uploads/${usuario.url_foto_perfil}` });
+        }
+        // Cargar mascotas para poder navegar a editar
+        apiFetch(`/mascotas/${usuario.usuario_id}`)
+          .then((data) => { mascotasRef.current = data || []; })
+          .catch(() => {});
       }
-    }
-  }, []);
+    }, []),
+  );
   const opciones = [
     {
       id: 1,
@@ -53,10 +62,14 @@ export default function PerfilUsuario({ navigation }) {
   const handlePress = (opcion) => {
     if (opcion.screen) {
       if (opcion.id === 9) {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: "Login" }],
-        });
+        navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+      } else if (opcion.id === 2) {
+        const mascotas = mascotasRef.current;
+        if (!mascotas || mascotas.length === 0) {
+          showToast("No tienes mascotas registradas.", "info");
+        } else {
+          setModalMascotas(true);
+        }
       } else {
         navigation.navigate(opcion.screen);
       }
@@ -134,7 +147,7 @@ export default function PerfilUsuario({ navigation }) {
           onPressIn={() => setHoveredTab(2)}
           onPressOut={() => setHoveredTab(null)}
           onPress={() => {
-            Alert.alert("Próximamente", "El mapa estará disponible pronto.")
+            showToast("El mapa estará disponible pronto.", "info")
           }}
         >
           {hoveredTab === 2 && <Text style={styles.tabLabel}>Mapa</Text>}
@@ -160,6 +173,67 @@ export default function PerfilUsuario({ navigation }) {
           />
         </TouchableOpacity>
       </View>
+      {/* MODAL SELECTOR DE MASCOTAS */}
+      <Modal
+        visible={modalMascotas}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setModalMascotas(false)}
+      >
+        <View style={mStyles.overlay}>
+          <View style={mStyles.sheet}>
+            <Text style={mStyles.sheetTitle}>¿Qué mascota deseas editar?</Text>
+            <ScrollView>
+              {mascotasRef.current.map((m) => (
+                <TouchableOpacity
+                  key={m.mascota_id}
+                  style={mStyles.mascotaItem}
+                  onPress={() => {
+                    setModalMascotas(false);
+                    navigation.navigate("EditarMascota", { mascota: m });
+                  }}
+                >
+                  <Image
+                    source={
+                      m.url_foto
+                        ? { uri: `${API_URL}/uploads/${m.url_foto}` }
+                        : require("../../../assets/perro1.jpg")
+                    }
+                    style={mStyles.mascotaImg}
+                  />
+                  <View style={mStyles.mascotaInfo}>
+                    <Text style={mStyles.mascotaNombre}>{m.nombre}</Text>
+                    <Text style={mStyles.mascotaRaza}>{m.raza || "Sin raza"}</Text>
+                  </View>
+                  <Text style={mStyles.mascotaArrow}>›</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity
+              style={mStyles.cancelBtn}
+              onPress={() => setModalMascotas(false)}
+            >
+              <Text style={mStyles.cancelTxt}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {ToastComponent}
     </View>
   );
 }
+
+const mStyles = StyleSheet.create({
+  overlay:      { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
+  sheet:        { backgroundColor: "#fff", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, maxHeight: "70%" },
+  sheetTitle:   { fontSize: 17, fontWeight: "bold", color: "#333", marginBottom: 16, textAlign: "center" },
+  mascotaItem:  { flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#f0f0f0" },
+  mascotaImg:   { width: 52, height: 52, borderRadius: 26, marginRight: 14, backgroundColor: "#eee" },
+  mascotaInfo:  { flex: 1 },
+  mascotaNombre:{ fontSize: 15, fontWeight: "bold", color: "#333" },
+  mascotaRaza:  { fontSize: 13, color: "#888", marginTop: 2 },
+  mascotaArrow: { fontSize: 22, color: "#99D9C1", fontWeight: "bold" },
+  cancelBtn:    { marginTop: 16, alignItems: "center", paddingVertical: 12, backgroundColor: "#f5f5f5", borderRadius: 12 },
+  cancelTxt:    { fontSize: 15, color: "#666", fontWeight: "600" },
+});

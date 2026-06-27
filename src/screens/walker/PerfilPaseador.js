@@ -21,6 +21,7 @@ export default function PerfilPaseador({ navigation }) {
   }, []);
 
   const opciones = [
+    { id: 0, nombre: "Editar perfil", icon: "👤", screen: "EditarPerfilPaseador" },
     { id: 1, nombre: "Historial paseos", icon: "📋", screen: "PaseosPaseador" },
     { id: 2, nombre: "Calificaciones", icon: "⭐", screen: "Calificaciones" },
     { id: 3, nombre: "Gráficas", icon: "📊", screen: "GananciasPaseador" },
@@ -38,6 +39,22 @@ export default function PerfilPaseador({ navigation }) {
       navigation.navigate(op.screen);
     }
   };
+
+  // Recargar datos del usuario al volver de editar perfil
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      const usuarioStr = storage.getItem("usuario");
+      if (usuarioStr) {
+        const usuario = JSON.parse(usuarioStr);
+        const nombre = usuario.nombre_completo?.split(" ").slice(0, 2).join(" ") || "Paseador";
+        setUserName(nombre);
+        if (usuario.url_foto_perfil) {
+          setUserImage({ uri: `${API_URL}/uploads/${usuario.url_foto_perfil}` });
+        }
+      }
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   return (
     <View style={styles.container}>

@@ -4,6 +4,7 @@ import { loginStyles as styles } from "./styles/LoginStyles";
 import { s, vs, ms } from "../../utils/responsive";
 import storage from "../../utils/storage";
 import { API_URL } from "../../utils/api";
+import useToast from "../../utils/useToast";
 
 export default function Login({ route, navigation }) {
   const { tipo } = route.params || { tipo: "cliente" };
@@ -15,6 +16,7 @@ export default function Login({ route, navigation }) {
   const [attempts, setAttempts] = useState(0);
   const [isWaiting, setIsWaiting] = useState(false);
   const [remainingTime, setRemainingTime] = useState(0);
+  const { showToast, ToastComponent } = useToast();
 
   // ⏱️ Efecto para el temporizador de espera
   useEffect(() => {
@@ -39,13 +41,13 @@ export default function Login({ route, navigation }) {
   const iniciarSesion = async () => {
     // Validación básica
     if (!email || !password) {
-      alert("Completa todos los campos");
+      showToast("Completa todos los campos.", "warning");
       return;
     }
 
     // Si está en espera, no permitir más intentos
     if (isWaiting) {
-      alert(`Espera ${remainingTime} segundos antes de intentar nuevamente.`);
+      showToast(`Espera ${remainingTime} segundos antes de intentar nuevamente.`, "warning");
       return;
     }
 
@@ -67,6 +69,18 @@ export default function Login({ route, navigation }) {
       console.log("Respuesta:", data);
 
       if (response.ok) {
+        const esPaseador = !!data.usuario.es_paseador;
+
+        // Validar que el tipo de cuenta coincida con el flujo de acceso
+        if (tipo === "cliente" && esPaseador) {
+          showToast("Esta cuenta es de paseador. Usa el acceso de Paseador.", "warning");
+          return;
+        }
+        if (tipo === "paseador" && !esPaseador) {
+          showToast("Esta cuenta es de cliente. Usa el acceso de Cliente.", "warning");
+          return;
+        }
+
         // ✅ Login exitoso
         setAttempts(0);
         setEmail("");
@@ -75,11 +89,11 @@ export default function Login({ route, navigation }) {
         // 💾 Guardar sesión
         storage.setItem("usuario", JSON.stringify(data.usuario));
 
-        // 🔀 Navegación
-        if (tipo === "cliente") {
-          navigation.navigate("Inicio_cliente");
-        } else {
+        // 🔀 Navegación según rol real de la cuenta
+        if (esPaseador) {
           navigation.navigate("Inicio_paseador");
+        } else {
+          navigation.navigate("Inicio_cliente");
         }
       } else {
         // ❌ Login fallido
@@ -90,14 +104,14 @@ export default function Login({ route, navigation }) {
           // Bloquea después de 3 intentos
           setIsWaiting(true);
           setRemainingTime(60);
-          alert("⛔ Demasiados intentos fallidos. Espera 1 minuto.");
+          showToast("Demasiados intentos fallidos. Espera 1 minuto.", "error");
         } else {
-          alert(data.message || "Correo o contraseña incorrectos");
+          showToast(data.message || "Correo o contraseña incorrectos.", "error");
         }
       }
     } catch (error) {
       console.log("Error:", error);
-      alert("Error de conexión con el servidor");
+      showToast("Error de conexión con el servidor.", "error");
     }
   };
 
@@ -112,7 +126,7 @@ export default function Login({ route, navigation }) {
           zIndex: 10,
           padding: s(10),
         }}
-        onPress={() => navigation.goBack()}
+        onPress={() => navigation.navigate("Welcome", { tipo })}
       >
         <Text style={{ fontSize: ms(15), color: "#333", fontWeight: "bold" }}>
           ← Volver
@@ -178,7 +192,7 @@ export default function Login({ route, navigation }) {
         {/* 🔗 Olvidaste Contraseña */}
         <TouchableOpacity
           onPress={() =>
-            alert("Funcionalidad de recuperación de contraseña próximamente")
+            showToast("Funcionalidad de recuperación de contraseña próximamente.", "info")
           }
           disabled={isWaiting}
         >
@@ -194,6 +208,7 @@ export default function Login({ route, navigation }) {
           </Text>
         </TouchableOpacity>
       </View>
+      {ToastComponent}
     </View>
   );
 }

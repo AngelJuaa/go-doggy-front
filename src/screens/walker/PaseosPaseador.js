@@ -24,6 +24,10 @@ export default function PaseosPaseador({ navigation }) {
     }
   };
 
+  const gananciasTotal = paseos
+    .filter((p) => p.estado === "completado")
+    .reduce((sum, p) => sum + parseFloat(p.costo_total || 0), 0);
+
   const estadoColor = {
     creado: "#FFA500", en_camino: "#007bff", completado: "#28a745", cancelado: "#dc3545",
   };
@@ -37,6 +41,13 @@ export default function PaseosPaseador({ navigation }) {
         <Text style={styles.title}>✅ Paseos realizados</Text>
         <View />
       </View>
+
+      {!loading && (
+        <View style={styles.gananciasHeader}>
+          <Text style={styles.gananciasLabel}>Ganancias totales</Text>
+          <Text style={styles.gananciasValor}>${gananciasTotal.toFixed(2)} MXN</Text>
+        </View>
+      )}
 
       {loading ? (
         <ActivityIndicator size="large" color="#99D9C1" style={{ marginTop: vs(40) }} />
@@ -56,6 +67,12 @@ export default function PaseosPaseador({ navigation }) {
                 <Text style={styles.detail}>Dueño: {p.dueno_nombre}</Text>
                 <Text style={styles.detail}>Tipo: {p.tipo_servicio} · {p.duracion_minutos} min</Text>
                 <Text style={styles.detail}>Solicitado: {new Date(p.hora_solicitada).toLocaleDateString()}</Text>
+                {p.estado === "completado" && parseFloat(p.costo_total || 0) > 0 && (
+                  <View style={styles.costoRow}>
+                    <Text style={styles.costoText}>💰 ${parseFloat(p.costo_total).toFixed(2)} MXN</Text>
+                    <Text style={styles.metodoText}>{p.metodo_pago || "Efectivo"}</Text>
+                  </View>
+                )}
                 {p.estado === "completado" && (
                   <TouchableOpacity
                     style={styles.rutaBtn}
@@ -103,6 +120,12 @@ const styles = StyleSheet.create({
   detail: { fontSize: ms(12), color: "#666", marginBottom: vs(3) },
   rutaBtn: { backgroundColor: "#99D9C1", borderRadius: s(10), padding: s(8), alignItems: "center", marginTop: vs(8) },
   rutaBtnText: { color: "#fff", fontWeight: "bold", fontSize: ms(12) },
+  gananciasHeader: { backgroundColor: "#EDF9F4", marginHorizontal: s(16), marginTop: vs(10), borderRadius: s(12), padding: s(14), flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1, borderColor: "#99D9C1" },
+  gananciasLabel: { fontSize: ms(13), fontWeight: "600", color: "#555" },
+  gananciasValor: { fontSize: ms(18), fontWeight: "bold", color: "#22a06b" },
+  costoRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: "#EDF9F4", borderRadius: s(8), padding: s(8), marginTop: vs(6) },
+  costoText: { fontSize: ms(13), fontWeight: "bold", color: "#22a06b" },
+  metodoText: { fontSize: ms(12), color: "#666", fontStyle: "italic" },
   bottomTab: { flexDirection: "row", backgroundColor: "#99D9C1", height: vs(65), justifyContent: "space-around", alignItems: "center" },
   tabItem: { alignItems: "center" },
   tabIcon: { fontSize: ms(20) },

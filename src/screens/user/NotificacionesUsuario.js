@@ -1,49 +1,80 @@
-import React from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Image,
+  ActivityIndicator,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
+import storage from "../../utils/storage";
+import { API_URL } from "../../utils/api";
+import { vs, ms, s } from "../../utils/responsive";
 
-const NOTIFICACIONES = [
-  {
-    id: 1,
-    iconColor: "#E53935",
-    iconText: "!",
-    titulo: "Mascotas extraviadas",
-    fecha: "17 Diciembre 2025",
-    subtitulo: "Lo nuevo del momento",
-    descripcion:
-      "Se han reportado mascotas extraviadas en tu zona. Mantente alerta y reporta cualquier avistamiento a las autoridades o refugios cercanos. La colaboración de todos es clave para recuperarlas.\n\nSi encuentras una mascota perdida, revisa si tiene identificación y contacta al dueño. En caso de no tener, llévala a un refugio local o publícalo en redes sociales.\n\nRecuerda que cada mascota es parte de una familia que la extraña y necesita tu ayuda para regresar a casa.",
-  },
-  {
-    id: 2,
-    iconColor: "#FFC107",
-    iconText: "⭐",
-    titulo: "Nueva calificacion",
-    fecha: "17 Diciembre 2025",
-    subtitulo: "Lo nuevo del momento",
-    descripcion:
-      "Has recibido una nueva calificación de parte de tu cliente. Revisa los comentarios y continúa brindando un excelente servicio.\n\nLas calificaciones son esenciales para que más dueños confíen en ti. Responde con amabilidad y agradece los comentarios recibidos.\n\nSigue así y pronto serás uno de los paseadores mejor valorados de la plataforma. ¡Gracias por tu dedicación!",
-  },
-  {
-    id: 3,
-    iconColor: "#1565C0",
-    iconText: "💬",
-    titulo: "Nuevo Comentario",
-    fecha: "17 Diciembre 2025",
-    subtitulo: "Lo nuevo del momento",
-    descripcion:
-      "Un cliente ha dejado un nuevo comentario en tu perfil de paseador. Accede para leerlo y responderlo si lo deseas.\n\nLos comentarios te ayudan a mejorar y construir una reputación sólida dentro de la comunidad GoDoggy.\n\nNo olvides revisar periódicamente tu perfil para mantenerte al día con las opiniones de tus clientes y ofrecer siempre la mejor experiencia.",
-  },
-];
+const TIPO_META = {
+  paseo:        { color: "#7CEDA3", icono: "🐕" },
+  calificacion: { color: "#FFC107", icono: "⭐" },
+  info:         { color: "#1E88E5", icono: "ℹ️" },
+};
+
+function formatFecha(isoStr) {
+  if (!isoStr) return "";
+  const d = new Date(isoStr);
+  return d.toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
+}
 
 export default function NotificacionesUsuario({ navigation }) {
+  const [usuario, setUsuario] = useState(null);
+  const [notificaciones, setNotificaciones] = useState([]);
+  const [cargando, setCargando] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      const u = storage.getItem("usuario");
+      if (!u) return;
+      const user = JSON.parse(u);
+      setUsuario(user);
+      cargarNotificaciones(user.usuario_id);
+    }, [])
+  );
+
+  const cargarNotificaciones = async (uid) => {
+    try {
+      setCargando(true);
+      const res = await fetch(`${API_URL}/notificaciones/${uid}`);
+      const data = await res.json();
+      setNotificaciones(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error("Error cargando notificaciones:", e);
+      setNotificaciones([]);
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  const abrirNotificacion = async (n) => {
+    // Marcar como leída en el backend
+    if (!n.leida) {
+      fetch(`${API_URL}/notificaciones/${n.notificacion_id}/leer`, { method: "PUT" }).catch(() => {});
+      setNotificaciones(prev =>
+        prev.map(x => x.notificacion_id === n.notificacion_id ? { ...x, leida: true } : x)
+      );
+    }
+    navigation.navigate("NotificacionDetalle", { notificacion: n });
+  };
+
+  const eliminarNotificacion = async (id) => {
+    fetch(`${API_URL}/notificaciones/${id}`, { method: "DELETE" }).catch(() => {});
+    setNotificaciones(prev => prev.filter(x => x.notificacion_id !== id));
+  };
+
+  const esPaseador = usuario?.es_paseador;
+  const sinLeer = notificaciones.filter(n => !n.leida).length;
+
   return (
     <View style={styles.container}>
-
       {/* BACK BUTTON */}
       <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
         <Text style={styles.backText}>↩</Text>
@@ -52,169 +83,190 @@ export default function NotificacionesUsuario({ navigation }) {
       {/* HEADER */}
       <View style={styles.header}>
         <Text style={styles.bellIcon}>🔔</Text>
-        <Text style={styles.headerTitle}>Notificaciones</Text>
+        <View>
+          <Text style={styles.headerTitle}>Notificaciones</Text>
+          {sinLeer > 0 && (
+            <Text style={styles.sinLeerText}>{sinLeer} sin leer</Text>
+          )}
+        </View>
       </View>
 
       {/* LISTA */}
-      <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
-        {NOTIFICACIONES.map((n) => (
-          <View key={n.id}>
-            <View style={styles.divider} />
-            <TouchableOpacity
-              style={styles.item}
-              onPress={() =>
-                navigation.navigate("NotificacionDetalle", { notificacion: n })
-              }
-            >
-              {/* Ícono circular */}
-              <View style={[styles.iconCircle, { backgroundColor: n.iconColor }]}>
-                <Text style={styles.iconText}>{n.iconText}</Text>
-              </View>
+      {cargando ? (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#99D9C1" />
+        </View>
+      ) : notificaciones.length === 0 ? (
+        <View style={styles.center}>
+          <Text style={styles.emptyIcon}>🔕</Text>
+          <Text style={styles.emptyText}>Sin notificaciones por ahora</Text>
+        </View>
+      ) : (
+        <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
+          {notificaciones.map((n) => {
+            const meta = TIPO_META[n.tipo] || TIPO_META.info;
+            const color = n.color_icono || meta.color;
+            const icono = n.icono || meta.icono;
+            return (
+              <View key={n.notificacion_id}>
+                <View style={styles.divider} />
+                <TouchableOpacity
+                  style={[styles.item, !n.leida && styles.itemNoLeida]}
+                  onPress={() => abrirNotificacion(n)}
+                  onLongPress={() => eliminarNotificacion(n.notificacion_id)}
+                >
+                  {/* Punto de no leída */}
+                  {!n.leida && <View style={styles.puntito} />}
 
-              {/* Texto */}
-              <View style={styles.itemBody}>
-                <Text style={styles.itemTitle}>{n.titulo}</Text>
-                <Text style={styles.itemFecha}>{n.fecha}</Text>
-              </View>
+                  {/* Ícono circular */}
+                  <View style={[styles.iconCircle, { backgroundColor: color }]}>
+                    <Text style={styles.iconText}>{icono}</Text>
+                  </View>
 
-              {/* Flecha */}
-              <Text style={styles.arrow}>▶</Text>
-            </TouchableOpacity>
-          </View>
-        ))}
-        <View style={styles.divider} />
-      </ScrollView>
+                  {/* Texto */}
+                  <View style={styles.itemBody}>
+                    <Text style={[styles.itemTitle, !n.leida && styles.itemTitleBold]}>
+                      {n.titulo}
+                    </Text>
+                    <Text style={styles.itemFecha}>{formatFecha(n.fecha_creacion)}</Text>
+                  </View>
+
+                  {/* Flecha */}
+                  <Text style={styles.arrow}>▶</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          })}
+          <View style={styles.divider} />
+          <Text style={styles.hintText}>Mantén presionado para eliminar</Text>
+        </ScrollView>
+      )}
 
       {/* BOTTOM TAB */}
-      <View style={styles.bottomTab}>
-        <TouchableOpacity
-          style={styles.tabItem}
-          onPress={() => navigation.navigate("Inicio_paseador")}
-        >
-          <Text style={styles.tabIcon}>🏠</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.tabItem}
-          onPress={() => navigation.navigate("PaseosPaseador")}
-        >
-          <Text style={styles.tabIcon}>✅</Text>
-        </TouchableOpacity>
-
-        {/* Bell activo */}
-        <TouchableOpacity style={[styles.tabItem, styles.tabActive]}>
-          <Text style={[styles.tabIcon, styles.tabIconActive]}>🔔</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.tabItem}
-          onPress={() => navigation.navigate("PerfilPaseador")}
-        >
-          <Text style={styles.tabIcon}>👤</Text>
-        </TouchableOpacity>
-      </View>
+      {esPaseador ? (
+        <View style={styles.bottomTab}>
+          <TouchableOpacity style={styles.tabItem} onPress={() => navigation.navigate("Inicio_paseador")}>
+            <Text style={styles.tabIcon}>🏠</Text>
+            <Text style={styles.tabLabel}>Inicio</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.tabItem} onPress={() => navigation.navigate("PaseosPaseador")}>
+            <Text style={styles.tabIcon}>✅</Text>
+            <Text style={styles.tabLabel}>Paseos</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.tabItem, styles.tabActive]}>
+            <Text style={[styles.tabIcon, styles.tabIconActive]}>🔔</Text>
+            <Text style={styles.tabLabel}>Notificaciones</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.tabItem} onPress={() => navigation.navigate("PerfilPaseador")}>
+            <Text style={styles.tabIcon}>👤</Text>
+            <Text style={styles.tabLabel}>Perfil</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={styles.bottomTabCliente}>
+          <TouchableOpacity style={styles.tabItemCliente} onPress={() => navigation.navigate("Inicio_cliente")}>
+            <Image source={require("../../../assets/casa.png")} style={styles.tabIconImg} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.tabItemCliente} onPress={() => navigation.navigate("Servicio_Cliente_Inicio")}>
+            <Image source={require("../../../assets/puntos.png")} style={styles.tabIconImg} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.tabItemCliente} onPress={() => navigation.navigate("MapaCliente")}>
+            <Image source={require("../../../assets/maps.png")} style={styles.tabIconImg} />
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.tabItemCliente, styles.tabActive]}>
+            <Image source={require("../../../assets/Notificaciones.png")} style={styles.tabIconImg} />
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F2EDD8" },
+  container: { flex: 1, backgroundColor: "#F5F5F0" },
 
-  /* Back */
-  backBtn: {
-    position: "absolute",
-    top: 48,
-    right: 18,
-    zIndex: 10,
-    padding: 6,
-  },
-  backText: { fontSize: 26, color: "#222" },
+  backBtn: { position: "absolute", top: vs(48), right: s(18), zIndex: 10, padding: s(6) },
+  backText: { fontSize: ms(26), color: "#222" },
 
-  /* Header */
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: 52,
-    paddingBottom: 24,
-    paddingHorizontal: 28,
-    gap: 14,
+    paddingTop: vs(52),
+    paddingBottom: vs(24),
+    paddingHorizontal: s(28),
+    gap: s(14),
   },
-  bellIcon: { fontSize: 44 },
-  headerTitle: {
-    fontSize: 32,
-    fontWeight: "700",
-    color: "#1a1a1a",
-    letterSpacing: 0.5,
-  },
+  bellIcon: { fontSize: ms(44) },
+  headerTitle: { fontSize: ms(32), fontWeight: "700", color: "#1a1a1a", letterSpacing: 0.5 },
+  sinLeerText: { fontSize: ms(12), color: "#E53935", fontWeight: "700", marginTop: vs(2) },
 
-  /* Lista */
+  center: { flex: 1, justifyContent: "center", alignItems: "center", gap: vs(12) },
+  emptyIcon: { fontSize: ms(52) },
+  emptyText: { fontSize: ms(15), color: "#888", fontWeight: "500" },
+
   list: { flex: 1 },
 
-  divider: {
-    height: 3,
-    backgroundColor: "#111",
-    marginHorizontal: 0,
-  },
+  divider: { height: 3, backgroundColor: "#111" },
 
   item: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 22,
-    paddingVertical: 18,
-    backgroundColor: "#F2EDD8",
+    paddingHorizontal: s(22),
+    paddingVertical: vs(18),
+    backgroundColor: "#F5F5F0",
+    position: "relative",
+  },
+  itemNoLeida: { backgroundColor: "#EDF9F4" },
+
+  puntito: {
+    position: "absolute",
+    left: s(8),
+    top: "50%",
+    width: s(8),
+    height: s(8),
+    borderRadius: s(4),
+    backgroundColor: "#E53935",
   },
 
   iconCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: s(52),
+    height: s(52),
+    borderRadius: s(26),
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 16,
+    marginRight: s(16),
   },
-  iconText: {
-    fontSize: 22,
-    fontWeight: "900",
-    color: "#fff",
-  },
+  iconText: { fontSize: ms(22) },
 
   itemBody: { flex: 1 },
-  itemTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#1a1a1a",
-    marginBottom: 4,
-  },
-  itemFecha: {
-    fontSize: 12,
-    color: "#555",
-    fontWeight: "500",
-  },
+  itemTitle: { fontSize: ms(15), fontWeight: "500", color: "#1a1a1a", marginBottom: vs(4) },
+  itemTitleBold: { fontWeight: "700" },
+  itemFecha: { fontSize: ms(12), color: "#555", fontWeight: "500" },
 
-  arrow: {
-    fontSize: 14,
-    color: "#333",
-    marginLeft: 10,
-  },
+  arrow: { fontSize: ms(14), color: "#333", marginLeft: s(10) },
 
-  /* Bottom tab */
+  hintText: { textAlign: "center", color: "#aaa", fontSize: ms(11), paddingVertical: vs(12) },
+
   bottomTab: {
     flexDirection: "row",
     backgroundColor: "#99D9C1",
-    height: 65,
+    height: vs(65),
     justifyContent: "space-around",
     alignItems: "center",
   },
-  tabItem: {
+  tabItem: { alignItems: "center", justifyContent: "center", flex: 1, height: "100%", gap: vs(2) },
+  tabActive: { borderTopWidth: 3, borderTopColor: "#1a1a1a" },
+  tabIcon: { fontSize: ms(20) },
+  tabIconActive: { fontSize: ms(22) },
+  tabLabel: { fontSize: ms(10), fontWeight: "bold", color: "#1A1A1A" },
+
+  bottomTabCliente: {
+    flexDirection: "row",
+    backgroundColor: "#99D9C1",
+    height: vs(65),
+    justifyContent: "space-around",
     alignItems: "center",
-    justifyContent: "center",
-    flex: 1,
-    height: "100%",
   },
-  tabActive: {
-    borderTopWidth: 3,
-    borderTopColor: "#1a1a1a",
-  },
-  tabIcon: { fontSize: 22 },
-  tabIconActive: { fontSize: 24 },
+  tabItemCliente: { alignItems: "center", justifyContent: "center", flex: 1, height: "100%" },
+  tabIconImg: { width: s(28), height: s(28), resizeMode: "contain" },
 });

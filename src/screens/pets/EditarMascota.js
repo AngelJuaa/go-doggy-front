@@ -6,13 +6,13 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
-  Alert,
   ActivityIndicator,
   Platform,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { styles } from "./styles/EditarMascotaStyles";
 import { API_URL } from "../../utils/api";
+import useToast from "../../utils/useToast";
 
 export default function EditarMascota({ route, navigation }) {
   const { mascota } = route.params;
@@ -32,6 +32,7 @@ export default function EditarMascota({ route, navigation }) {
   const [notas,      setNotas]      = useState(mascota.notas_comportamiento || "");
   const [fotoNueva,  setFotoNueva]  = useState(null);
   const [guardando,  setGuardando]  = useState(false);
+  const { showToast, ToastComponent } = useToast();
 
   // ─── Seleccionar foto ──────────────────────────────────────────────────────
   const seleccionarFoto = async () => {
@@ -39,7 +40,7 @@ export default function EditarMascota({ route, navigation }) {
       if (Platform.OS !== "web") {
         const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!perm.granted) {
-          Alert.alert("Permiso denegado", "Se necesitan permisos para acceder a las fotos.");
+          showToast("Se necesitan permisos para acceder a las fotos.", "warning");
           return;
         }
       }
@@ -51,15 +52,15 @@ export default function EditarMascota({ route, navigation }) {
       });
       if (!result.canceled) setFotoNueva(result.assets[0]);
     } catch (e) {
-      Alert.alert("Error", "No se pudo seleccionar la foto.");
+      showToast("No se pudo seleccionar la foto.", "error");
     }
   };
 
   // ─── Guardar cambios en el backend ─────────────────────────────────────────
   const guardar = async () => {
-    if (!nombre.trim()) { Alert.alert("Validación", "El nombre es obligatorio."); return; }
-    if (!peso.trim() || isNaN(Number(peso)) || Number(peso) <= 0) {
-      Alert.alert("Validación", "Ingresa un peso válido mayor a 0.");
+    if (!nombre.trim()) { showToast("El nombre es obligatorio.", "warning"); return; }
+    if (peso.trim() && (isNaN(Number(peso)) || Number(peso) <= 0)) {
+      showToast("El peso debe ser un número mayor a 0.", "warning");
       return;
     }
 
@@ -79,8 +80,12 @@ export default function EditarMascota({ route, navigation }) {
       formData.append("patas",           mascota.num_patas || 4);
 
       if (fotoNueva) {
-        const blob = await (await fetch(fotoNueva.uri)).blob();
-        formData.append("foto", blob, "mascota.jpg");
+        if (Platform.OS === "web") {
+          const blob = await (await fetch(fotoNueva.uri)).blob();
+          formData.append("foto", blob, "mascota.jpg");
+        } else {
+          formData.append("foto", { uri: fotoNueva.uri, name: "mascota.jpg", type: "image/jpeg" });
+        }
       }
 
       const response = await fetch(`${API_URL}/mascota/${mascota.mascota_id}`, {
@@ -90,14 +95,29 @@ export default function EditarMascota({ route, navigation }) {
 
       const data = await response.json();
       if (response.ok) {
-        Alert.alert("✅ Actualizado", "Los datos de la mascota se guardaron correctamente.");
-        navigation.goBack();
+        showToast("Los datos de la mascota se guardaron correctamente.", "success");
+        // Navegar de vuelta con los datos actualizados para que MascotaDetalles no muestre datos viejos
+        setTimeout(() => {
+          navigation.navigate("MascotaDetalles", {
+            mascota: {
+              ...mascota,
+              nombre:                nombre.trim(),
+              raza:                  raza.trim(),
+              color:                 color.trim(),
+              sexo:                  sexo.trim(),
+              fecha_nacimiento:      fechaNac.trim() || null,
+              peso_kg:               peso.trim() ? parseFloat(peso) : null,
+              notas_comportamiento:  notas.trim(),
+              url_foto:              data.url_foto ?? mascota.url_foto,
+            },
+          });
+        }, 1500);
       } else {
-        Alert.alert("Error", data.message || "No se pudo actualizar.");
+        showToast(data.message || "No se pudo actualizar.", "error");
       }
     } catch (e) {
       console.error(e);
-      Alert.alert("Error", "Error de conexión con el servidor.");
+      showToast("Error de conexión con el servidor.", "error");
     } finally {
       setGuardando(false);
     }
@@ -111,6 +131,7 @@ export default function EditarMascota({ route, navigation }) {
     : require("../../../assets/perro1.jpg");
 
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView style={styles.container}>
       {/* HEADER */}
       <View style={styles.header}>
@@ -207,5 +228,7 @@ export default function EditarMascota({ route, navigation }) {
         </TouchableOpacity>
       </View>
     </ScrollView>
+    {ToastComponent}
+    </View>
   );
 }

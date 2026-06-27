@@ -118,6 +118,14 @@ export default function Inicio_cliente({ route, navigation }) {
           <Text style={styles.searchText}>Buscar paseador</Text>
         </TouchableOpacity>
 
+        {/* BOTÓN HISTORIAL */}
+        <TouchableOpacity
+          style={styles.historialBtn}
+          onPress={() => navigation.navigate("HistorialCliente")}
+        >
+          <Text style={styles.historialText}>📋 Mis paseos</Text>
+        </TouchableOpacity>
+
         {/* BOTÓN AGREGAR */}
         <TouchableOpacity style={styles.addButton} onPress={irRegistroMascota}>
           <Text style={styles.addIcon}>+</Text>

@@ -6,12 +6,12 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
 } from "react-native";
 import { s, vs, ms } from "../../utils/responsive";
 import * as ImagePicker from "expo-image-picker";
 import { styles } from "./styles/RegistroUsuarioStyles";
 import { API_URL } from "../../utils/api";
+import useToast from "../../utils/useToast";
 
 export default function RegistroUsuario({ navigation }) {
   const [nombre, setNombre] = useState("");
@@ -27,16 +27,14 @@ export default function RegistroUsuario({ navigation }) {
   const [errorConfirmPassword, setErrorConfirmPassword] = useState("");
   const [fotoPerfil, setFotoPerfil] = useState(null);
   const [errorFoto, setErrorFoto] = useState("");
+  const { showToast, ToastComponent } = useToast();
 
   // 📷 Función para seleccionar fotografía
   const seleccionarFoto = async () => {
     try {
       const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permiso.granted) {
-        Alert.alert(
-          "Permiso denegado",
-          "Se necesitan permisos para acceder a las fotos",
-        );
+        showToast("Se necesitan permisos para acceder a las fotos.", "warning");
         return;
       }
 
@@ -53,7 +51,7 @@ export default function RegistroUsuario({ navigation }) {
       }
     } catch (error) {
       console.log("Error al seleccionar foto:", error);
-      Alert.alert("Error", "No se pudo seleccionar la foto");
+      showToast("No se pudo seleccionar la foto.", "error");
     }
   };
 
@@ -127,14 +125,14 @@ export default function RegistroUsuario({ navigation }) {
       console.log("Respuesta del servidor:", response.status, data);
 
       if (response.ok) {
-        Alert.alert("Éxito", "Usuario registrado correctamente");
-        navigation.navigate("Login");
+        showToast("Usuario registrado correctamente.", "success");
+        setTimeout(() => navigation.navigate("Login"), 1500);
       } else {
-        Alert.alert("Error", data.message || "Error al registrar");
+        showToast(data.message || "Error al registrar.", "error");
       }
     } catch (error) {
       console.log("❌ Error en registro:", error);
-      Alert.alert("Error", "Error de conexión con el servidor");
+      showToast("Error de conexión con el servidor.", "error");
     }
   };
 
@@ -142,6 +140,7 @@ export default function RegistroUsuario({ navigation }) {
 
   return (
     <View style={{ flex: 1 }}>
+      {ToastComponent}
       <TouchableOpacity
         style={{
           position: "absolute",

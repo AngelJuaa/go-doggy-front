@@ -1,9 +1,11 @@
-import React, { useState } from "react";
-import { View, Text, Image, ScrollView, TouchableOpacity, Alert, Share } from "react-native";
+import React from "react";
+import { View, Text, Image, ScrollView, TouchableOpacity, Share } from "react-native";
 import { styles } from "./ServicioPromocionesDetallesStyles";
+import useToast from "../../../utils/useToast";
 
 export default function Servicio_Detalles_Promociones({ route, navigation }) {
   const { promocion } = route.params || {};
+  const { showToast, ToastComponent } = useToast();
 
   const regresar = () => navigation.goBack();
 
@@ -85,10 +87,7 @@ export default function Servicio_Detalles_Promociones({ route, navigation }) {
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={styles.canjearButton}
-            onPress={() => Alert.alert("Canjear Promoción", `Usa el código: ${promocionData.codigo_promocional}\n\n${promocionData.condiciones}`, [
-              { text: "Cerrar", style: "cancel" },
-              { text: "Copiar código", onPress: () => Alert.alert("Copiado", `Código "${promocionData.codigo_promocional}" listo para usar.`) },
-            ])}
+            onPress={() => showToast(`Código: ${promocionData.codigo_promocional} — ${promocionData.condiciones}`, "info")}
           >
             <Text style={styles.buttonText}>Canjear Ahora</Text>
           </TouchableOpacity>
@@ -100,6 +99,7 @@ export default function Servicio_Detalles_Promociones({ route, navigation }) {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      {ToastComponent}
     </View>
   );
 }

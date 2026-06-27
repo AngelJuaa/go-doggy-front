@@ -6,16 +6,13 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
   StyleSheet,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { s, vs, ms } from "../../utils/responsive";
 import storage from "../../utils/storage";
 import { API_URL } from "../../utils/api";
+import useToast from "../../utils/useToast";
 
 const formatNombreMascota = (text) => {
   return text
@@ -42,6 +39,8 @@ export default function RegistroMascota({ navigation }) {
   const [patas, setPatas] = useState(4);
   const [notasExtra, setNotasExtra] = useState("");
   const [foto, setFoto] = useState(null);
+  const [hoveredTab, setHoveredTab] = useState(null);
+  const { showToast, ToastComponent } = useToast();
 
   // Error states
   const [errorTipoMascota, setErrorTipoMascota] = useState("");
@@ -66,10 +65,7 @@ export default function RegistroMascota({ navigation }) {
     try {
       const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permiso.granted) {
-        Alert.alert(
-          "Permiso denegado",
-          "Se necesitan permisos para acceder a las fotos",
-        );
+        showToast("Se necesitan permisos para acceder a las fotos.", "warning");
         return;
       }
 
@@ -86,7 +82,7 @@ export default function RegistroMascota({ navigation }) {
       }
     } catch (error) {
       console.log("Error al seleccionar foto:", error);
-      Alert.alert("Error", "No se pudo seleccionar la foto");
+      showToast("No se pudo seleccionar la foto.", "error");
     }
   };
 
@@ -155,7 +151,7 @@ export default function RegistroMascota({ navigation }) {
     if (hasError) return;
 
     if (!usuarioId) {
-      Alert.alert("Error", "Usuario no identificado");
+      showToast("Usuario no identificado.", "error");
       return;
     }
 
@@ -197,14 +193,14 @@ export default function RegistroMascota({ navigation }) {
       console.log("📡 RESPUESTA:", data);
 
       if (response.ok) {
-        Alert.alert("Éxito", `Mascota registrada\nID: ${data.mascota_id}`);
-        navigation.navigate("Inicio_cliente");
+        showToast("¡Mascota registrada correctamente!", "success");
+        setTimeout(() => navigation.navigate("Inicio_cliente"), 1500);
       } else {
-        Alert.alert("Error", data.message || "Error al guardar");
+        showToast(data.message || "Error al guardar.", "error");
       }
     } catch (error) {
       console.error("❌ Error frontend:", error);
-      Alert.alert("Error", "No se pudo conectar con el servidor");
+      showToast("No se pudo conectar con el servidor.", "error");
     }
   };
 
@@ -212,27 +208,18 @@ export default function RegistroMascota({ navigation }) {
   const unselectedColor = "#fff";
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoid}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
+    <View style={styles.container}>
+      <View style={styles.headerRow}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Text style={{ fontSize: 28 }}>↩</Text>
+        </TouchableOpacity>
+      </View>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={true}
       >
-        <View style={styles.page}>
-          <View style={styles.headerRow}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-              <Text style={{ fontSize: 28 }}>↩</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            showsVerticalScrollIndicator={true}
-            scrollEnabled={true}
-            nestedScrollEnabled={true}
-          >
             <Text style={styles.title}>Registro de Mascota</Text>
 
             <View style={styles.card}>
@@ -503,38 +490,67 @@ export default function RegistroMascota({ navigation }) {
             >
               <Text style={styles.submitText}>Guardar mascota</Text>
             </TouchableOpacity>
-          </ScrollView>
-        </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      </ScrollView>
+
+      <View style={styles.bottomTab}>
+        <TouchableOpacity
+          style={styles.tabItem}
+          onMouseEnter={() => setHoveredTab(0)}
+          onMouseLeave={() => setHoveredTab(null)}
+          onPress={() => navigation.navigate("Inicio_cliente")}
+        >
+          {hoveredTab === 0 && <Text style={styles.tabLabel}>Inicio</Text>}
+          <Image source={require("../../../assets/casa.png")} style={styles.tabIconImg} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.tabItem}
+          onMouseEnter={() => setHoveredTab(1)}
+          onMouseLeave={() => setHoveredTab(null)}
+          onPress={() => navigation.navigate("Servicio_Cliente_Inicio")}
+        >
+          {hoveredTab === 1 && <Text style={styles.tabLabel}>Servicio</Text>}
+          <Image source={require("../../../assets/puntos.png")} style={styles.tabIconImg} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.tabItem}
+          onMouseEnter={() => setHoveredTab(2)}
+          onMouseLeave={() => setHoveredTab(null)}
+          onPress={() => showToast("El mapa estará disponible pronto.", "info")}
+        >
+          {hoveredTab === 2 && <Text style={styles.tabLabel}>Mapa</Text>}
+          <Image source={require("../../../assets/maps.png")} style={styles.tabIconImg} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.tabItem}
+          onMouseEnter={() => setHoveredTab(3)}
+          onMouseLeave={() => setHoveredTab(null)}
+          onPress={() => navigation.navigate("NotificacionesUsuario")}
+        >
+          {hoveredTab === 3 && <Text style={styles.tabLabel}>Notificaciones</Text>}
+          <Image source={require("../../../assets/Notificaciones.png")} style={styles.tabIconImg} />
+        </TouchableOpacity>
+      </View>
+
+      {ToastComponent}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
+    height: "100vh",
     backgroundColor: "#f5f5f5",
-  },
-  keyboardAvoid: {
-    flex: 1,
-  },
-  page: {
-    flex: 1,
   },
   headerRow: {
     flexDirection: "row",
-    justifyContent: "flex-end",
+    justifyContent: "flex-start",
     padding: s(10),
     backgroundColor: "#f5f5f5",
   },
-  scrollView: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-  },
   scrollContent: {
-    flexGrow: 1,
     padding: s(15),
-    paddingBottom: vs(38),
+    paddingBottom: vs(20),
   },
   title: {
     fontSize: ms(22),
@@ -655,4 +671,14 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: ms(15),
   },
+  bottomTab: {
+    flexDirection: "row",
+    backgroundColor: "#99D9C1",
+    height: vs(65),
+    justifyContent: "space-around",
+    alignItems: "center",
+  },
+  tabItem: { alignItems: "center", justifyContent: "center", flex: 1 },
+  tabLabel: { fontSize: ms(10), fontWeight: "bold", color: "#333", marginBottom: vs(2) },
+  tabIconImg: { width: s(38), height: s(38), resizeMode: "contain" },
 });

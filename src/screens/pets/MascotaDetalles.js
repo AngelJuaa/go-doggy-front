@@ -5,14 +5,15 @@ import {
   Image,
   ScrollView,
   TouchableOpacity,
-  Alert,
 } from "react-native";
 import { styles } from "./styles/MascotaDetallesStyles";
 import { API_URL } from "../../utils/api";
+import useToast from "../../utils/useToast";
 
 export default function MascotaDetalles({ route, navigation }) {
   const { mascota } = route.params;
   const [showConfirm, setShowConfirm] = useState(false);
+  const { showToast, ToastComponent } = useToast();
 
   const regresar = () => navigation.goBack();
 
@@ -30,7 +31,7 @@ export default function MascotaDetalles({ route, navigation }) {
     );
 
     if (!mascota.mascota_id) {
-      Alert.alert("Error", "ID de mascota inválido o no encontrado");
+      showToast("ID de mascota inválido o no encontrado.", "error");
       return;
     }
 
@@ -65,16 +66,14 @@ export default function MascotaDetalles({ route, navigation }) {
       }
 
       if (response.ok) {
-        alert("Éxito: Mascota eliminada correctamente");
-        navigation.goBack();
+        showToast("Mascota eliminada correctamente.", "success");
+        setTimeout(() => navigation.goBack(), 1500);
       } else {
-        alert(
-          `Error ${response.status}: ${data.message || "Error desconocido"}`,
-        );
+        showToast(data.message || "Error desconocido.", "error");
       }
     } catch (error) {
       console.error("❌ Error de red:", error);
-      alert(`Error de conexión: ${error.message}`);
+      showToast("Error de conexión.", "error");
     }
   };
 
@@ -171,6 +170,7 @@ export default function MascotaDetalles({ route, navigation }) {
           </View>
         </View>
       )}
+      {ToastComponent}
     </View>
   );
 }

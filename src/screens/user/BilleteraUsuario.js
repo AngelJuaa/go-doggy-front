@@ -1,8 +1,10 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { s, vs, ms } from "../../utils/responsive";
+import useToast from "../../utils/useToast";
 
 export default function BilleteraUsuario({ navigation }) {
+  const { showToast, ToastComponent } = useToast();
   const movimientos = [
     { id: 1, concepto: "Paseo - Kronos", monto: "-$150.00", fecha: "17 Dic 2025", tipo: "gasto" },
     { id: 2, concepto: "Recarga de saldo", monto: "+$500.00", fecha: "15 Dic 2025", tipo: "ingreso" },
@@ -25,7 +27,7 @@ export default function BilleteraUsuario({ navigation }) {
         <View style={styles.saldoCard}>
           <Text style={styles.saldoLabel}>Saldo disponible</Text>
           <Text style={styles.saldoValue}>$230.00</Text>
-          <TouchableOpacity style={styles.recargarBtn} onPress={() => Alert.alert("Recargar", "Función de recarga próximamente.")}>
+          <TouchableOpacity style={styles.recargarBtn} onPress={() => showToast("Función de recarga próximamente.", "info")}>
             <Text style={styles.recargarText}>+ Recargar saldo</Text>
           </TouchableOpacity>
         </View>
@@ -41,6 +43,7 @@ export default function BilleteraUsuario({ navigation }) {
           </View>
         ))}
       </ScrollView>
+      {ToastComponent}
     </View>
   );
 }

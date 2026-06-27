@@ -50,6 +50,17 @@ export const styles = StyleSheet.create({
     marginTop: vs(18),
   },
   addIcon: { fontSize: ms(28), fontWeight: "bold" },
+  historialBtn: {
+    backgroundColor: "#EDF9F4",
+    borderWidth: 1,
+    borderColor: "#99D9C1",
+    borderRadius: s(20),
+    paddingHorizontal: s(28),
+    paddingVertical: vs(10),
+    marginTop: vs(14),
+  },
+  historialText: { fontSize: ms(14), fontWeight: "bold", color: "#22a06b" },
+  petDetails: { fontSize: ms(13), color: "#555" },
   bottomTab: {
     flexDirection: "row",
     backgroundColor: "#99D9C1",

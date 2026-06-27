@@ -1,9 +1,13 @@
 import React, { useState } from "react";
-import { View, Text, Image, ScrollView, TouchableOpacity, Alert, Share } from "react-native";
+import { View, Text, Image, ScrollView, TouchableOpacity, Share } from "react-native";
 import { styles } from "./ServicioOfertasDetallesStyles";
+import useToast from "../../../utils/useToast";
+import ConfirmModal from "../../../components/ConfirmModal";
 
 export default function Servicio_Detalles_Ofertas({ route, navigation }) {
   const { oferta } = route.params || {};
+  const [confirmCompra, setConfirmCompra] = useState(false);
+  const { showToast, ToastComponent } = useToast();
 
   const regresar = () => navigation.goBack();
 
@@ -82,10 +86,7 @@ export default function Servicio_Detalles_Ofertas({ route, navigation }) {
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={styles.comprarButton}
-            onPress={() => Alert.alert("Comprar Ahora", `${ofertaData.nombre}\nPrecio: ${ofertaData.precio}\n${ofertaData.envio_rapido}`, [
-              { text: "Cancelar", style: "cancel" },
-              { text: "Comprar", onPress: () => Alert.alert("¡Compra realizada!", "Tu pedido ha sido procesado exitosamente.") },
-            ])}
+            onPress={() => setConfirmCompra(true)}
           >
             <Text style={styles.buttonText}>Comprar Ahora</Text>
           </TouchableOpacity>
@@ -97,6 +98,16 @@ export default function Servicio_Detalles_Ofertas({ route, navigation }) {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      <ConfirmModal
+        visible={confirmCompra}
+        title="Comprar Ahora"
+        message={`${ofertaData.nombre}\nPrecio: ${ofertaData.precio}\n${ofertaData.envio_rapido}`}
+        confirmText="Comprar"
+        cancelText="Cancelar"
+        onConfirm={() => { setConfirmCompra(false); showToast("¡Compra realizada! Tu pedido ha sido procesado.", "success"); }}
+        onCancel={() => setConfirmCompra(false)}
+      />
+      {ToastComponent}
     </View>
   );
 }

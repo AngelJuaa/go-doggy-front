@@ -1,14 +1,22 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Image,
 } from "react-native";
+import storage from "../../utils/storage";
 
 export default function NotificacionDetalle({ route, navigation }) {
   const { notificacion } = route.params || {};
+  const [esPaseador, setEsPaseador] = useState(false);
+
+  useEffect(() => {
+    const u = storage.getItem("usuario");
+    if (u) setEsPaseador(!!JSON.parse(u).es_paseador);
+  }, []);
 
   if (!notificacion) {
     return (
@@ -40,7 +48,11 @@ export default function NotificacionDetalle({ route, navigation }) {
 
       {/* SUBTÍTULO + LÍNEA */}
       <View style={styles.subtituloBox}>
-        <Text style={styles.subtitulo}>{notificacion.subtitulo}</Text>
+        <Text style={styles.subtitulo}>
+          {notificacion.fecha_creacion
+            ? new Date(notificacion.fecha_creacion).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })
+            : notificacion.subtitulo || ""}
+        </Text>
         <View style={styles.subtituloLine} />
       </View>
 
@@ -50,39 +62,47 @@ export default function NotificacionDetalle({ route, navigation }) {
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.descripcion}>{notificacion.descripcion}</Text>
+        <Text style={styles.descripcion}>
+          {notificacion.descripcion || notificacion.descripcion}
+        </Text>
       </ScrollView>
 
-      {/* BOTTOM TAB */}
-      <View style={styles.bottomTab}>
-        <TouchableOpacity
-          style={styles.tabItem}
-          onPress={() => navigation.navigate("Inicio_paseador")}
-        >
-          <Text style={styles.tabIcon}>🏠</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.tabItem}
-          onPress={() => navigation.navigate("PaseosPaseador")}
-        >
-          <Text style={styles.tabIcon}>✅</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.tabItem}
-          onPress={() => navigation.navigate("NotificacionesUsuario")}
-        >
-          <Text style={styles.tabIcon}>🔔</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.tabItem}
-          onPress={() => navigation.navigate("PerfilPaseador")}
-        >
-          <Text style={styles.tabIcon}>👤</Text>
-        </TouchableOpacity>
-      </View>
+      {/* BOTTOM TAB — adapta según rol */}
+      {esPaseador ? (
+        <View style={styles.bottomTab}>
+          <TouchableOpacity style={styles.tabItem} onPress={() => navigation.navigate("Inicio_paseador")}>
+            <Text style={styles.tabIcon}>🏠</Text>
+            <Text style={styles.tabLabel}>Inicio</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.tabItem} onPress={() => navigation.navigate("PaseosPaseador")}>
+            <Text style={styles.tabIcon}>✅</Text>
+            <Text style={styles.tabLabel}>Paseos</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.tabItem} onPress={() => navigation.navigate("NotificacionesUsuario")}>
+            <Text style={styles.tabIcon}>🔔</Text>
+            <Text style={styles.tabLabel}>Notificaciones</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.tabItem} onPress={() => navigation.navigate("PerfilPaseador")}>
+            <Text style={styles.tabIcon}>👤</Text>
+            <Text style={styles.tabLabel}>Perfil</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={styles.bottomTabCliente}>
+          <TouchableOpacity style={styles.tabItemCliente} onPress={() => navigation.navigate("Inicio_cliente")}>
+            <Image source={require("../../../assets/casa.png")} style={styles.tabIconImg} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.tabItemCliente} onPress={() => navigation.navigate("Servicio_Cliente_Inicio")}>
+            <Image source={require("../../../assets/puntos.png")} style={styles.tabIconImg} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.tabItemCliente} onPress={() => navigation.navigate("MapaCliente")}>
+            <Image source={require("../../../assets/maps.png")} style={styles.tabIconImg} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.tabItemCliente} onPress={() => navigation.navigate("NotificacionesUsuario")}>
+            <Image source={require("../../../assets/Notificaciones.png")} style={styles.tabIconImg} />
+          </TouchableOpacity>
+        </View>
+      )}
 
     </View>
   );
@@ -91,7 +111,7 @@ export default function NotificacionDetalle({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F2EDD8",
+    backgroundColor: "#F5F5F0",
   },
 
   /* Top bar */
@@ -157,7 +177,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
-  /* Bottom tab */
+  /* Bottom tab — paseador */
   bottomTab: {
     flexDirection: "row",
     backgroundColor: "#99D9C1",
@@ -170,6 +190,24 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flex: 1,
     height: "100%",
+    gap: 2,
   },
-  tabIcon: { fontSize: 22 },
+  tabIcon: { fontSize: 20 },
+  tabLabel: { fontSize: 10, fontWeight: "bold", color: "#1A1A1A" },
+
+  /* Bottom tab — cliente */
+  bottomTabCliente: {
+    flexDirection: "row",
+    backgroundColor: "#99D9C1",
+    height: 65,
+    justifyContent: "space-around",
+    alignItems: "center",
+  },
+  tabItemCliente: {
+    alignItems: "center",
+    justifyContent: "center",
+    flex: 1,
+    height: "100%",
+  },
+  tabIconImg: { width: 28, height: 28, resizeMode: "contain" },
 });

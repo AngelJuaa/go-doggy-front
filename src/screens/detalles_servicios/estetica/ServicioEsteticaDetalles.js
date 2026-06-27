@@ -1,9 +1,13 @@
 import React, { useState } from "react";
-import { View, Text, Image, ScrollView, TouchableOpacity, Alert } from "react-native";
+import { View, Text, Image, ScrollView, TouchableOpacity } from "react-native";
 import { styles } from "./ServicioEsteticaDetallesStyles";
+import useToast from "../../../utils/useToast";
+import ConfirmModal from "../../../components/ConfirmModal";
 
 export default function Servicio_Detalles_Estetica({ route, navigation }) {
   const { servicio } = route.params || {};
+  const [confirmReserva, setConfirmReserva] = useState(false);
+  const { showToast, ToastComponent } = useToast();
 
   const regresar = () => navigation.goBack();
 
@@ -74,21 +78,28 @@ export default function Servicio_Detalles_Estetica({ route, navigation }) {
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={styles.reservarButton}
-            onPress={() => Alert.alert("Reservar", `¿Deseas reservar "${servicioData.nombre}" en ${servicioData.empresa}?`, [
-              { text: "Cancelar", style: "cancel" },
-              { text: "Confirmar", onPress: () => Alert.alert("¡Reserva confirmada!", `Tu cita en ${servicioData.empresa} ha sido registrada.`) },
-            ])}
+            onPress={() => setConfirmReserva(true)}
           >
             <Text style={styles.buttonText}>Reservar</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.contactButton}
-            onPress={() => Alert.alert("Contactar", `${servicioData.empresa}\nDuración: ${servicioData.duracion}`)}
+            onPress={() => showToast(`${servicioData.empresa} — Duración: ${servicioData.duracion}`, "info")}
           >
             <Text style={styles.buttonText}>Contactar</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
+      <ConfirmModal
+        visible={confirmReserva}
+        title="Reservar"
+        message={`¿Deseas reservar "${servicioData.nombre}" en ${servicioData.empresa}?`}
+        confirmText="Confirmar"
+        cancelText="Cancelar"
+        onConfirm={() => { setConfirmReserva(false); showToast(`¡Reserva confirmada! Tu cita en ${servicioData.empresa} ha sido registrada.`, "success"); }}
+        onCancel={() => setConfirmReserva(false)}
+      />
+      {ToastComponent}
     </View>
   );
 }

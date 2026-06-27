@@ -35,7 +35,7 @@ export const styles = StyleSheet.create({
   optionText: { fontSize: ms(18), fontWeight: "bold" },
   bottomTab: {
     flexDirection: "row",
-    backgroundColor: "#A3D9C9",
+    backgroundColor: "#99D9C1",
     height: vs(65),
     position: "absolute",
     bottom: 0,
@@ -43,7 +43,7 @@ export const styles = StyleSheet.create({
     justifyContent: "space-around",
     alignItems: "center",
   },
-  tabIconImg: { width: s(42), height: s(42), resizeMode: "contain" },
+  tabIconImg: { width: s(38), height: s(38), resizeMode: "contain" },
   tabItem: { alignItems: "center", justifyContent: "center" },
   tabLabel: { fontSize: ms(11), fontWeight: "bold", color: "#333", marginBottom: vs(4) },
 });
