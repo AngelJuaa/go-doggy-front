@@ -169,6 +169,32 @@ export default function AgregarDireccionCliente({ navigation }) {
 		}
 	};
 
+	const geocodeDireccion = async ({ calle, numeroExterior, colonia, ciudad, estado, pais, codigoPostal }) => {
+		const query = new URLSearchParams();
+		if (calle) query.append("calle", calle);
+		if (numeroExterior) query.append("numero_calle", numeroExterior);
+		if (numeroExterior) query.append("numero_externo", numeroExterior);
+		if (colonia) query.append("colonia", colonia);
+		if (ciudad) query.append("ciudad", ciudad);
+		if (estado) query.append("estado", estado);
+		if (pais) query.append("pais", pais);
+		if (codigoPostal) query.append("codigo_postal", codigoPostal);
+
+		if (!query.toString()) return null;
+
+		try {
+			const data = await apiFetch(`/direccion/geocode?${query.toString()}`);
+			if (!Number.isFinite(data.latitude) || !Number.isFinite(data.longitude)) return null;
+			return {
+				latitude: Number(data.latitude),
+				longitude: Number(data.longitude),
+			};
+		} catch (error) {
+			console.warn("Error geocodificando direccion:", error);
+			return null;
+		}
+	};
+
 	const onChangeCodigoPostal = (text) => {
 		const limpio = text.replace(/\D/g, "").slice(0, 5);
 		setForm((prev) => ({ ...prev, codigoPostal: limpio }));
@@ -237,6 +263,46 @@ export default function AgregarDireccionCliente({ navigation }) {
 			return;
 		}
 
+		let lat = Number(form.latitud);
+		let lng = Number(form.longitud);
+
+		if (
+			form.calle.trim() &&
+			form.numeroExterior.trim() &&
+			form.colonia.trim() &&
+			form.ciudad.trim() &&
+			form.estado.trim() &&
+			form.pais.trim()
+		) {
+			const geocoded = await geocodeDireccion({
+				calle: form.calle.trim(),
+				numeroExterior: form.numeroExterior.trim(),
+				colonia: form.colonia.trim(),
+				ciudad: form.ciudad.trim(),
+				estado: form.estado.trim(),
+				pais: form.pais.trim(),
+				codigoPostal: form.codigoPostal.trim(),
+			});
+			if (geocoded) {
+				lat = geocoded.latitude;
+				lng = geocoded.longitude;
+				setForm((prev) => ({
+					...prev,
+					latitud: String(lat),
+					longitud: String(lng),
+				}));
+			}
+		}
+
+		if (!Number.isFinite(lat) || !Number.isFinite(lng) || (lat === 0 && lng === 0)) {
+			Alert.alert(
+				"Error de geolocalización",
+				"No se pudieron obtener coordenadas precisas para tu dirección. Revisa los datos e intenta de nuevo."
+			);
+			setGuardando(false);
+			return;
+		}
+
 		setGuardando(true);
 
 		try {
@@ -251,8 +317,8 @@ export default function AgregarDireccionCliente({ navigation }) {
 				numero_calle: form.numeroExterior.trim(),
 				numero_externo: form.numeroExterior.trim(),
 				referencias_casa: form.referencias.trim(),
-				latitud: Number(form.latitud) || 0,
-				longitud: Number(form.longitud) || 0,
+				latitud: lat,
+				longitud: lng,
 			};
 
 			await apiFetch("/direccion", {

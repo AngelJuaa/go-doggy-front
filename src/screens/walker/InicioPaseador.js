@@ -14,16 +14,68 @@ export default function InicioPaseador({ navigation }) {
   const [usuario, setUsuario]               = useState(null);
   const [miPos, setMiPos]                   = useState(null);
   const [servicioActivo, setServicioActivo] = useState(null);
-  const [solicitudPendiente, setSolicitudPendiente] = useState(null);
+  const [solicitudesPendientes, setSolicitudesPendientes] = useState([]);
   const [ruta, setRuta]                     = useState([]);
+  const [destinoPos, setDestinoPos]         = useState(null);
   const [conectado, setConectado]           = useState(false);
+  const [cronometroSegundos, setCronometroSegundos] = useState(0);
+  const [finalizandoServicio, setFinalizandoServicio] = useState(false);
 
   const watchRef          = useRef(null);
   const servicioActivoRef = useRef(null);
   const iframeRef         = useRef(null);
   const rutaRef           = useRef([]);
+  const inicioServicioRef = useRef(null);
   const isWeb             = Platform.OS === "web";
   const socket            = getSocket();
+
+  const formatTime = (seconds) => {
+    const total = Math.max(0, Number(seconds) || 0);
+    const mins = Math.floor(total / 60);
+    const secs = total % 60;
+    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  };
+
+  const limpiarServicioActivo = () => {
+    detenerGPS();
+    servicioActivoRef.current = null;
+    inicioServicioRef.current = null;
+    setServicioActivo(null);
+    setDestinoPos(null);
+    setCronometroSegundos(0);
+    rutaRef.current = [];
+    setRuta([]);
+  };
+
+  const normalizarSolicitud = (solicitud) => {
+    if (!solicitud) return null;
+
+    const mascotas = Array.isArray(solicitud.mascotas)
+      ? solicitud.mascotas
+          .filter((item) => item && item.mascota_id)
+          .map((item) => ({
+            mascota_id: Number(item.mascota_id),
+            mascota_nombre: item.mascota_nombre || `#${item.mascota_id}`,
+          }))
+      : [];
+
+    return {
+      ...solicitud,
+      servicio_id: Number(solicitud.servicio_id),
+      mascotas,
+    };
+  };
+
+  const cargarSolicitudesPendientes = async () => {
+    try {
+      const data = await apiFetch("/servicios/pendientes");
+      setSolicitudesPendientes(
+        Array.isArray(data) ? data.map(normalizarSolicitud).filter(Boolean) : []
+      );
+    } catch (error) {
+      console.error("❌ Error cargando solicitudes pendientes:", error);
+    }
+  };
 
   // ─── HTML del mapa web — mismo que MapaCliente ──────────────────────────────
   const webMapHtml = useMemo(() => `<!DOCTYPE html>
@@ -39,19 +91,25 @@ export default function InicioPaseador({ navigation }) {
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     const map = L.map('map').setView([${DEFAULT_LAT},${DEFAULT_LNG}], 15);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+      maxZoom:20,
+      subdomains:'abcd',
+      attribution:'&copy; OpenStreetMap &copy; CARTO'
+    }).addTo(map);
 
-    // Marcador del paseador (pin estándar de Leaflet)
-    const paseadorIcon = L.icon({
-      iconUrl:'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-      iconRetinaUrl:'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-      shadowUrl:'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-      iconSize:[25,41], iconAnchor:[12,41], popupAnchor:[1,-34], shadowSize:[41,41]
+    // Marcador del paseador (badge moderno)
+    const paseadorIcon = L.divIcon({
+      className:'',
+      iconSize:[32,32],
+      iconAnchor:[16,32],
+      html:'<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(145deg,#34d399,#059669);border:3px solid #ffffff;box-shadow:0 8px 18px rgba(5,150,105,.35);display:flex;align-items:center;justify-content:center;color:white;font-size:14px;">P</div>'
     });
     const paseadorMarker = L.marker([${DEFAULT_LAT},${DEFAULT_LNG}],
       {icon:paseadorIcon}).addTo(map).bindPopup('📍 Tu ubicación');
 
     let routeLine = null;
+    let destinoMarker = null;
+    let destinoLine = null;
 
     window.addEventListener('message', function(ev) {
       if (!ev.data) return;
@@ -60,9 +118,41 @@ export default function InicioPaseador({ navigation }) {
       if (d.type === 'updatePaseador') {
         paseadorMarker.setLatLng([d.lat, d.lng]);
         map.setView([d.lat, d.lng], map.getZoom(), {animate:true});
+
+        if (routeLine) {
+          map.removeLayer(routeLine);
+          routeLine = null;
+        }
         if (d.route && d.route.length > 1) {
-          if (routeLine) map.removeLayer(routeLine);
-          routeLine = L.polyline(d.route, {color:'#7CEDA3', weight:4}).addTo(map);
+          routeLine = L.polyline(d.route, {
+            color:'#047857',
+            weight:5,
+            opacity:0.9,
+            lineJoin:'round',
+            dashArray:'10, 8'
+          }).addTo(map);
+        }
+
+        if (d.destino && Number.isFinite(d.destino.lat) && Number.isFinite(d.destino.lng)) {
+          if (!destinoMarker) {
+            destinoMarker = L.marker([d.destino.lat, d.destino.lng]).addTo(map).bindPopup('📍 Cliente');
+          } else {
+            destinoMarker.setLatLng([d.destino.lat, d.destino.lng]);
+          }
+
+          if (destinoLine) {
+            map.removeLayer(destinoLine);
+            destinoLine = null;
+          }
+          destinoLine = L.polyline([ [d.lat, d.lng], [d.destino.lat, d.destino.lng] ], {
+            color:'#dc2626',
+            weight:4,
+            opacity:0.85,
+            dashArray:'8, 6'
+          }).addTo(map);
+        } else if (destinoMarker) {
+          map.removeLayer(destinoMarker);
+          destinoMarker = null;
         }
       }
     });
@@ -79,7 +169,19 @@ export default function InicioPaseador({ navigation }) {
       setConectado(true);
     }
     iniciarGPS();
-    socket.on("servicio:nuevo", (data) => setSolicitudPendiente(data));
+    cargarSolicitudesPendientes();
+    socket.on("servicio:nuevo", (data) => {
+      const solicitud = normalizarSolicitud(data);
+      if (!solicitud) return;
+
+      setSolicitudesPendientes((current) => {
+        const existe = current.some(
+          (item) => Number(item.servicio_id) === Number(solicitud.servicio_id)
+        );
+        if (existe) return current;
+        return [solicitud, ...current];
+      });
+    });
     return () => {
       socket.off("servicio:nuevo");
       detenerGPS();
@@ -106,7 +208,13 @@ export default function InicioPaseador({ navigation }) {
         setRuta([...rutaRef.current]);
         // Actualizar iframe web
         iframeRef.current?.contentWindow?.postMessage({
-          type: "updatePaseador", lat, lng, route: rutaRef.current,
+          type: "updatePaseador",
+          lat,
+          lng,
+          route: rutaRef.current,
+          destino: destinoPos && Number.isFinite(destinoPos.latitude) && Number.isFinite(destinoPos.longitude)
+            ? { lat: destinoPos.latitude, lng: destinoPos.longitude }
+            : null,
         }, "*");
         // Emitir al cliente si hay servicio activo
         const activo = servicioActivoRef.current;
@@ -125,52 +233,126 @@ export default function InicioPaseador({ navigation }) {
   const sendInitialPosition = () => {
     if (miPos && iframeRef.current?.contentWindow) {
       iframeRef.current.contentWindow.postMessage({
-        type: "updatePaseador", lat: miPos[0], lng: miPos[1], route: rutaRef.current,
+        type: "updatePaseador",
+        lat: miPos[0],
+        lng: miPos[1],
+        route: rutaRef.current,
+        destino: destinoPos && Number.isFinite(destinoPos.latitude) && Number.isFinite(destinoPos.longitude)
+          ? { lat: destinoPos.latitude, lng: destinoPos.longitude }
+          : null,
       }, "*");
     }
   };
 
+  useEffect(() => {
+    if (destinoPos && miPos && iframeRef.current?.contentWindow) {
+      sendInitialPosition();
+    }
+  }, [destinoPos, miPos]);
+
+  useEffect(() => {
+    if (!servicioActivo) {
+      setCronometroSegundos(0);
+      inicioServicioRef.current = null;
+      return;
+    }
+
+    const inicioBase = servicioActivo.hora_inicio
+      ? new Date(servicioActivo.hora_inicio).getTime()
+      : Date.now();
+
+    inicioServicioRef.current = Number.isFinite(inicioBase) ? inicioBase : Date.now();
+
+    const actualizar = () => {
+      const elapsed = Math.floor((Date.now() - inicioServicioRef.current) / 1000);
+      setCronometroSegundos(Math.max(0, elapsed));
+    };
+
+    actualizar();
+    const intervalId = setInterval(actualizar, 1000);
+    return () => clearInterval(intervalId);
+  }, [servicioActivo]);
+
   // ─── Acciones de servicio ────────────────────────────────────────────────────
-  const aceptarServicio = async () => {
-    if (!solicitudPendiente || !usuario?.usuario_id) return;
+  const aceptarServicio = async (solicitudPendiente) => {
+    if (!solicitudPendiente) {
+      Alert.alert("Error", "No se encontró la solicitud para aceptar.");
+      return;
+    }
+    if (!usuario?.usuario_id) {
+      console.warn("No hay usuario logueado para aceptar servicio", usuario);
+      Alert.alert("Error", "No se encontró un paseador activo. Vuelve a iniciar sesión.");
+      return;
+    }
+
     try {
-      const servicio = await apiFetch(`/servicio/${solicitudPendiente.servicio_id}/aceptar`, { 
+      const servicio = await apiFetch(`/servicio/${solicitudPendiente.servicio_id}/aceptar`, {
         method: "PUT",
-        body: JSON.stringify({ paseador_id: usuario.usuario_id })
+        body: JSON.stringify({ paseador_id: usuario.usuario_id }),
       });
+
       servicioActivoRef.current = servicio;
+      inicioServicioRef.current = Date.now();
+      setCronometroSegundos(0);
       setServicioActivo(servicio);
-      setSolicitudPendiente(null);
+
+      const lat = Number(servicio.direccion_latitud);
+      const lng = Number(servicio.direccion_longitud);
+      const destino = Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)
+        ? { lat, lng }
+        : null;
+      if (destino) {
+        setDestinoPos({ latitude: lat, longitude: lng });
+      }
+
+      setSolicitudesPendientes((current) =>
+        current.filter((item) => Number(item.servicio_id) !== Number(solicitudPendiente.servicio_id))
+      );
       iniciarGPS();
+      navigation.navigate("MapaPaseador", {
+        servicioActivoId: servicio.servicio_id,
+        destino,
+      });
       Alert.alert("✅ Servicio aceptado", "Tu ubicación GPS se está enviando al cliente.");
     } catch (e) {
-      Alert.alert("Error", e.message);
+      console.error("Error aceptando servicio:", e);
+      Alert.alert("Error", e.message || "No se pudo aceptar la solicitud.");
     }
   };
 
-  const rechazarServicio = async () => {
+  const rechazarServicio = async (solicitudPendiente) => {
     if (!solicitudPendiente) return;
     try {
       await apiFetch(`/servicio/${solicitudPendiente.servicio_id}/rechazar`, { method: "PUT" });
-      setSolicitudPendiente(null);
+      setSolicitudesPendientes((current) =>
+        current.filter((item) => Number(item.servicio_id) !== Number(solicitudPendiente.servicio_id))
+      );
     } catch (e) {
       Alert.alert("Error", e.message);
     }
   };
 
   const finalizarServicio = () => {
+    if (!servicioActivoRef.current?.servicio_id || finalizandoServicio) return;
+
     Alert.alert("Finalizar paseo", "¿Estás seguro?", [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Finalizar",
-        onPress: () => {
-          socket.emit("servicio:finalizar", { servicioId: servicioActivo.servicio_id });
-          detenerGPS();
-          servicioActivoRef.current = null;
-          setServicioActivo(null);
-          rutaRef.current = [];
-          setRuta([]);
-          Alert.alert("¡Paseo finalizado!", "El cliente ha sido notificado.");
+        onPress: async () => {
+          const servicioId = servicioActivoRef.current?.servicio_id;
+          if (!servicioId) return;
+
+          try {
+            setFinalizandoServicio(true);
+            await apiFetch(`/servicio/${servicioId}/finalizar`, { method: "PUT" });
+            limpiarServicioActivo();
+            Alert.alert("¡Paseo finalizado!", "El cliente ha sido notificado.");
+          } catch (error) {
+            Alert.alert("Error", error.message || "No se pudo finalizar el servicio.");
+          } finally {
+            setFinalizandoServicio(false);
+          }
         },
       },
     ]);
@@ -198,9 +380,18 @@ export default function InicioPaseador({ navigation }) {
       {/* BANNER SERVICIO ACTIVO (sobre el mapa) */}
       {servicioActivo && (
         <View style={styles.activoBanner}>
-          <Text style={styles.activoText}>🐕 Paseo en curso — GPS activo</Text>
-          <TouchableOpacity style={styles.btnFinalizar} onPress={finalizarServicio}>
-            <Text style={styles.btnFinalizarText}>Finalizar</Text>
+          <View style={styles.activoBannerInfo}>
+            <Text style={styles.activoText}>🐕 Paseo en curso — GPS activo</Text>
+            <Text style={styles.cronometroText}>
+              {formatTime(cronometroSegundos)} / {formatTime((Number(servicioActivo?.duracion_minutos) || 0) * 60)}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.btnFinalizar, finalizandoServicio && styles.btnFinalizarDisabled]}
+            onPress={finalizarServicio}
+            disabled={finalizandoServicio}
+          >
+            <Text style={styles.btnFinalizarText}>{finalizandoServicio ? "Finalizando..." : "Finalizar"}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -219,8 +410,15 @@ export default function InicioPaseador({ navigation }) {
         ) : (
           <LiveMap
             center={miPos}
-            markers={miPos ? [{ position: miPos, label: "📍 Tu posición" }] : []}
-            route={ruta}
+            markers={
+              miPos
+                ? [
+                    { position: miPos, label: "📍 Tu posición" },
+                    ...(destinoPos ? [{ position: [destinoPos.latitude, destinoPos.longitude], label: "📍 Cliente" }] : []),
+                  ]
+                : []
+            }
+            route={destinoPos && miPos ? [miPos, [destinoPos.latitude, destinoPos.longitude]] : ruta}
           />
         )}
       </View>
@@ -229,33 +427,37 @@ export default function InicioPaseador({ navigation }) {
       <View style={styles.paseosSection}>
         <Text style={styles.paseosSectionTitle}>Paseos disponibles</Text>
 
-        {solicitudPendiente ? (
-          <View style={styles.solicitudCard}>
-            {/* Lado izquierdo: info del usuario */}
-            <View style={styles.cardLeft}>
-              <Text style={styles.cardUser}>
-                {solicitudPendiente.dueno_nombre || `User${solicitudPendiente.dueno_id}`}
-              </Text>
-              <Text style={styles.cardMascota}>
-                Mascota : {solicitudPendiente.mascota_nombre || `#${solicitudPendiente.mascota_id}`}
-              </Text>
-            </View>
+        {solicitudesPendientes.length > 0 ? (
+          solicitudesPendientes.map((solicitudPendiente) => (
+            <View key={solicitudPendiente.servicio_id} style={styles.solicitudCard}>
+              {/* Lado izquierdo: info del usuario */}
+              <View style={styles.cardLeft}>
+                <Text style={styles.cardUser}>
+                  {solicitudPendiente.dueno_nombre || `User${solicitudPendiente.dueno_id}`}
+                </Text>
+                <Text style={styles.cardMascota}>
+                  Mascotas: {solicitudPendiente.mascotas?.length > 0
+                    ? solicitudPendiente.mascotas.map((m) => m.mascota_nombre).join(", ")
+                    : (solicitudPendiente.mascota_nombre || `#${solicitudPendiente.mascota_id}`)}
+                </Text>
+              </View>
 
-            {/* Lado derecho: nota + botones */}
-            <View style={styles.cardRight}>
-              <Text style={styles.cardNota} numberOfLines={1}>
-                Nota : {solicitudPendiente.notas_dueno || solicitudPendiente.notas || "Sin notas"}
-              </Text>
-              <View style={styles.cardBtns}>
-                <TouchableOpacity style={styles.btnMatch} onPress={aceptarServicio}>
-                  <Text style={styles.btnMatchText}>🐾 MATCH</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.btnX} onPress={rechazarServicio}>
-                  <Text style={styles.btnXText}>✕</Text>
-                </TouchableOpacity>
+              {/* Lado derecho: nota + botones */}
+              <View style={styles.cardRight}>
+                <Text style={styles.cardNota} numberOfLines={1}>
+                  Nota : {solicitudPendiente.notas_dueno || solicitudPendiente.notas || "Sin notas"}
+                </Text>
+                <View style={styles.cardBtns}>
+                  <TouchableOpacity style={styles.btnMatch} onPress={() => aceptarServicio(solicitudPendiente)}>
+                    <Text style={styles.btnMatchText}>🐾 MATCH</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.btnX} onPress={() => rechazarServicio(solicitudPendiente)}>
+                    <Text style={styles.btnXText}>✕</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
-          </View>
+          ))
         ) : (
           <Text style={styles.sinSolicitudes}>Sin solicitudes pendientes</Text>
         )}
@@ -318,13 +520,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: s(14),
     paddingVertical: vs(8),
   },
+  activoBannerInfo: { flex: 1 },
   activoText: { fontSize: ms(13), fontWeight: "bold", color: "#1a1a1a", flex: 1 },
+  cronometroText: { fontSize: ms(12), color: "#1f4d3f", fontWeight: "700", marginTop: vs(2) },
   btnFinalizar: {
     backgroundColor: "#dc3545",
     borderRadius: s(8),
     paddingHorizontal: s(12),
     paddingVertical: vs(6),
   },
+  btnFinalizarDisabled: { opacity: 0.7 },
   btnFinalizarText: { color: "#fff", fontWeight: "bold", fontSize: ms(12) },
 
   // Mapa

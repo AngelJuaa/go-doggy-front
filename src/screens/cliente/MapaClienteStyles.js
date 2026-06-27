@@ -84,6 +84,83 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E6E6E6",
     backgroundColor: "#FAFAFA",
+    paddingVertical: 6,
+  },
+  savedListState: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  savedListStateText: {
+    marginTop: 6,
+    color: "#666",
+    fontSize: 12,
+    textAlign: "center",
+  },
+  savedItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ECECEC",
+  },
+  savedItemTextWrap: {
+    flex: 1,
+    paddingRight: 10,
+  },
+  savedItemUseBtn: {
+    minWidth: 54,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#EAF6EE",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+    paddingHorizontal: 10,
+  },
+  savedItemUseBtnActive: {
+    backgroundColor: "#99D9C1",
+  },
+  savedItemUseText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#2E7D4F",
+  },
+  savedItemUseTextActive: {
+    color: "#1F4D36",
+  },
+  savedItemTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#333",
+  },
+  savedItemSubtitle: {
+    marginTop: 2,
+    fontSize: 12,
+    color: "#666",
+  },
+  savedItemSelectedBadge: {
+    marginTop: 4,
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#1F4D36",
+  },
+  savedItemArrowBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#EAF6EE",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  savedItemArrow: {
+    fontSize: 13,
+    color: "#2E7D4F",
+    fontWeight: "900",
+    lineHeight: 13,
   },
   // Map Container
   mapContainer: {

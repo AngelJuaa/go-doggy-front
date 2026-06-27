@@ -1,9 +1,10 @@
 ﻿import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, Image, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, Image, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { styles } from "./styles/InicioClienteStyles";
 import storage from "../../utils/storage";
 import { API_URL } from "../../utils/api";
+import { getSocket } from "../../utils/socket";
 
 export default function Inicio_cliente({ route, navigation }) {
   // ========================
@@ -11,6 +12,10 @@ export default function Inicio_cliente({ route, navigation }) {
   // ========================
   const [mascotas, setMascotas] = useState([]);
   const [hoveredTab, setHoveredTab] = useState(null);
+  const [paseadorInfo, setPaseadorInfo] = useState(null);
+  const [servicioActivo, setServicioActivo] = useState(null);
+  const [loadingPaseador, setLoadingPaseador] = useState(false);
+  const socket = getSocket();
 
   // ========================
   // FUNCIONES
@@ -47,9 +52,53 @@ export default function Inicio_cliente({ route, navigation }) {
           setMascotas([]);
         }
       };
+
+      const cargarPaseadorActivo = async () => {
+        try {
+          const usuarioGuardado = storage.getItem("usuario");
+          if (!usuarioGuardado) {
+            setPaseadorInfo(null);
+            setServicioActivo(null);
+            return;
+          }
+
+          const usuario = JSON.parse(usuarioGuardado);
+          const usuarioId = usuario.usuario_id;
+
+          setLoadingPaseador(true);
+          const response = await fetch(`${API_URL}/servicios/dueno/${usuarioId}/paseador-activo`);
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.message || "No se pudo cargar paseador");
+          }
+
+          setPaseadorInfo(data.paseador || null);
+          setServicioActivo(data.servicio || null);
+        } catch (error) {
+          console.error("Error cargando paseador activo:", error);
+          setPaseadorInfo(null);
+          setServicioActivo(null);
+        } finally {
+          setLoadingPaseador(false);
+        }
+      };
+
       cargarMascotas();
+      cargarPaseadorActivo();
     }, []),
   );
+
+  useEffect(() => {
+    try {
+      const usuario = JSON.parse(storage.getItem("usuario") || "{}");
+      if (usuario?.usuario_id) {
+        socket.emit("cliente:online", { clienteId: usuario.usuario_id });
+      }
+    } catch (error) {
+      // no-op
+    }
+  }, [socket]);
 
   useEffect(() => {
     console.log("Estado mascotas:", mascotas);
@@ -125,6 +174,44 @@ export default function Inicio_cliente({ route, navigation }) {
           <Text style={styles.addIcon}>+</Text>
         </TouchableOpacity>
         <Text style={styles.addHintText}>Agregar nueva mascota</Text>
+
+        <View style={styles.paseadorCard}>
+          <Text style={styles.paseadorCardTitle}>Tu paseador</Text>
+
+          {loadingPaseador ? (
+            <View style={styles.paseadorLoadingRow}>
+              <ActivityIndicator size="small" color="#5b8f7f" />
+              <Text style={styles.paseadorEmptyText}>Cargando informacion del paseador...</Text>
+            </View>
+          ) : paseadorInfo ? (
+            <View style={styles.paseadorContentRow}>
+              <Image
+                source={
+                  paseadorInfo.url_foto_perfil
+                    ? { uri: `${API_URL}/uploads/${paseadorInfo.url_foto_perfil}` }
+                    : require("../../../assets/perro1.jpg")
+                }
+                style={styles.paseadorPhoto}
+              />
+
+              <View style={styles.paseadorTextWrap}>
+                <Text style={styles.paseadorNombre}>
+                  {`${paseadorInfo.nombre || "Paseador"}${paseadorInfo.apellido ? ` ${paseadorInfo.apellido}` : ""}`}
+                </Text>
+                <Text style={styles.paseadorDescripcion} numberOfLines={3}>
+                  {paseadorInfo.biografia || "Sin descripcion disponible."}
+                </Text>
+                {servicioActivo?.estado ? (
+                  <Text style={styles.paseadorEstado}>Estado del servicio: {servicioActivo.estado}</Text>
+                ) : null}
+              </View>
+            </View>
+          ) : (
+            <Text style={styles.paseadorEmptyText}>
+              Aun no tienes un paseador asignado.
+            </Text>
+          )}
+        </View>
       </ScrollView>
 
       {/* BARRA INFERIOR */}

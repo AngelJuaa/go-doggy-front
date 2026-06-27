@@ -1,5 +1,6 @@
-import React from "react";
-import { NavigationContainer } from "@react-navigation/native";
+import React, { useEffect } from "react";
+import { Alert } from "react-native";
+import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 
 import WelcomePregunta from "./src/screens/welcome/WelcomePregunta";
@@ -36,6 +37,8 @@ import MascotaDetalles from "./src/screens/pets/MascotaDetalles";
 import PeticionPaseo from "./src/screens/cliente/PeticionPaseo";
 import MapaCliente from "./src/screens/cliente/MapaCliente";
 import AgregarDireccionCliente from "./src/screens/cliente/agregarDireccionCliente";
+import VerDireccionClienteDetalles from "./src/screens/cliente/verDireccionClienteDetalles";
+import EditarDireccionClienteDetalles from "./src/screens/cliente/editarDireccionClienteDetalles";
 import MapaPaseador from "./src/screens/walker/MapaPaseador";
 import GananciasPaseador from "./src/screens/walker/GananciasPaseador";
 import GananciasDetalle  from "./src/screens/walker/stats/GananciasDetalle";
@@ -50,12 +53,47 @@ import NotificacionesCliente from "./src/screens/cliente/notificaciones/Notifica
 import NotificacionDetalle from "./src/screens/user/NotificacionDetalle";
 import BilleteraUsuario from "./src/screens/user/BilleteraUsuario";
 import AyudaUsuario from "./src/screens/user/AyudaUsuario";
+import storage from "./src/utils/storage";
+import { getSocket } from "./src/utils/socket";
 
 const Stack = createStackNavigator();
+const navigationRef = createNavigationContainerRef();
 
 export default function App() {
+  useEffect(() => {
+    const socket = getSocket();
+
+    let usuario = null;
+    try {
+      usuario = JSON.parse(storage.getItem("usuario") || "{}");
+    } catch (error) {
+      usuario = null;
+    }
+
+    if (usuario?.usuario_id) {
+      socket.emit("cliente:online", { clienteId: usuario.usuario_id });
+    }
+
+    const onServicioAceptado = (payload) => {
+      const servicioId = Number(payload?.servicio_id);
+      if (!servicioId) return;
+
+      if (navigationRef.isReady()) {
+        navigationRef.navigate("MapaCliente", { servicioId });
+      }
+
+      Alert.alert("¡Paseador en camino!", "Tu solicitud fue aceptada. Te llevamos al mapa en tiempo real.");
+    };
+
+    socket.on("cliente:servicio:aceptado", onServicioAceptado);
+
+    return () => {
+      socket.off("cliente:servicio:aceptado", onServicioAceptado);
+    };
+  }, []);
+
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator
         initialRouteName="WelcomePregunta"
         screenOptions={{ headerShown: false }}
@@ -137,6 +175,8 @@ export default function App() {
         <Stack.Screen name="PeticionPaseo" component={PeticionPaseo} />
         <Stack.Screen name="MapaCliente" component={MapaCliente} />
         <Stack.Screen name="AgregarDireccionCliente" component={AgregarDireccionCliente} />
+        <Stack.Screen name="verDireccionClienteDetalles" component={VerDireccionClienteDetalles} />
+        <Stack.Screen name="editarDireccionClienteDetalles" component={EditarDireccionClienteDetalles} />
         <Stack.Screen name="MapaPaseador" component={MapaPaseador} />
         <Stack.Screen name="GananciasPaseador"  component={GananciasPaseador} />
         <Stack.Screen name="GananciasDetalle"   component={GananciasDetalle} />

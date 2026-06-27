@@ -32,7 +32,7 @@ export async function getCurrentPosition() {
   }
   try {
     const Location = require("expo-location");
-    // 1) Última ubicación conocida: instantánea (ideal en emulador)
+    // 1) Ãšltima ubicaciÃ³n conocida: instantÃ¡nea (ideal en emulador)
     let pos = await Location.getLastKnownPositionAsync();
     // 2) Si no hay, pedir una nueva (con timeout para no colgar la UI)
     if (!pos) {

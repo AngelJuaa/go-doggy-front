@@ -7,10 +7,52 @@ import { s, vs, ms } from "../../utils/responsive";
 import { API_URL, apiFetch } from "../../utils/api";
 import storage from "../../utils/storage";
 import { requestLocationPermission, getCurrentPosition } from "../../utils/geo";
+import { getSocket } from "../../utils/socket";
+
+const DIRECCION_SELECCIONADA_KEY = "direccion_mapa_seleccionada";
+
+const getDireccionLabel = (direccion) => {
+  if (!direccion) return null;
+
+  const calle = direccion.calle || "Sin calle";
+  const numero = direccion.numero_calle || direccion.numero_externo || "";
+  const colonia = direccion.colonia || "";
+
+  return `${calle}${numero ? ` #${numero}` : ""}${colonia ? ` · ${colonia}` : ""}`;
+};
+
+const getDireccionCoords = (direccion) => {
+  const latitud = Number(direccion?.latitud);
+  const longitud = Number(direccion?.longitud);
+
+  if (!Number.isFinite(latitud) || !Number.isFinite(longitud)) {
+    return null;
+  }
+
+  return { latitud, longitud };
+};
+
+const readSelectedDireccion = () => {
+  const raw = storage.getItem(DIRECCION_SELECCIONADA_KEY);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch (error) {
+    return null;
+  }
+};
+
+const getMascotaLabel = (mascota) => {
+  const nombre = mascota?.nombre || "Sin nombre";
+  const tipo = mascota?.tipo_mascota || mascota?.tipoMascota || mascota?.raza || "Sin tipo";
+  return `${nombre} (${tipo})`;
+};
 
 export default function PeticionPaseo({ navigation }) {
   const [mascotas, setMascotas] = useState([]);
-  const [mascotaSeleccionada, setMascotaSeleccionada] = useState(null);
+  const [mascotasSeleccionadas, setMascotasSeleccionadas] = useState([]);
   const [tipoServicio, setTipoServicio] = useState("Paseo");
   const [duracion, setDuracion] = useState("30");
   const [notas, setNotas] = useState("");
@@ -18,6 +60,9 @@ export default function PeticionPaseo({ navigation }) {
   const [usuario, setUsuario] = useState(null);
   const [hoveredTab, setHoveredTab] = useState(null);
   const [focusedField, setFocusedField] = useState("");
+  const [direccionGuardada, setDireccionGuardada] = useState(readSelectedDireccion());
+  const [servicioPendienteId, setServicioPendienteId] = useState(null);
+  const socket = getSocket();
 
   const tiposServicio = ["Paseo", "Guardería", "Veterinaria", "Estética"];
   const duraciones = ["15", "30", "45", "60", "90"];
@@ -25,22 +70,59 @@ export default function PeticionPaseo({ navigation }) {
   useEffect(() => {
     const u = JSON.parse(storage.getItem("usuario") || "{}");
     setUsuario(u);
+    if (u?.usuario_id) {
+      socket.emit("cliente:online", { clienteId: u.usuario_id });
+    }
     if (u.usuario_id) cargarMascotas(u.usuario_id);
-  }, []);
+    setDireccionGuardada(readSelectedDireccion());
+  }, [socket]);
+
+  useEffect(() => {
+    if (!servicioPendienteId) return;
+
+    const handleServicioAceptado = (payload) => {
+      const servicioId = Number(payload?.servicio_id);
+      if (!servicioId || servicioId !== servicioPendienteId) return;
+
+      setServicioPendienteId(null);
+      Alert.alert(
+        "¡Paseador aceptó tu solicitud!",
+        "Te mostramos la ubicación y la ruta en vivo.",
+        [{ text: "Ver mapa", onPress: () => navigation.navigate("MapaCliente", { servicioId }) }]
+      );
+
+      navigation.navigate("MapaCliente", { servicioId });
+    };
+
+    socket.on("cliente:servicio:aceptado", handleServicioAceptado);
+    return () => {
+      socket.off("cliente:servicio:aceptado", handleServicioAceptado);
+    };
+  }, [socket, servicioPendienteId, navigation]);
 
   const cargarMascotas = async (id) => {
     try {
       const data = await apiFetch(`/mascotas/${id}`);
       setMascotas(data);
-      if (data.length > 0) setMascotaSeleccionada(data[0]);
     } catch (e) {
       console.error(e);
     }
   };
 
+  const toggleMascotaSeleccionada = (mascota) => {
+    setMascotasSeleccionadas((current) => {
+      const existe = current.some((item) => item.mascota_id === mascota.mascota_id);
+      if (existe) {
+        return current.filter((item) => item.mascota_id !== mascota.mascota_id);
+      }
+
+      return [...current, mascota];
+    });
+  };
+
   const solicitarPaseo = async () => {
-    if (!mascotaSeleccionada) {
-      Alert.alert("Error", "Selecciona una mascota primero.");
+    if (mascotasSeleccionadas.length === 0) {
+      Alert.alert("Error", "Selecciona una o más mascotas primero.");
       return;
     }
     setLoading(true);
@@ -51,22 +133,26 @@ export default function PeticionPaseo({ navigation }) {
       const pos = await getCurrentPosition();
       if (pos) { lat = pos.lat; lng = pos.lng; }
 
+      const payload = {
+        dueno_id: usuario.usuario_id,
+        mascota_ids: mascotasSeleccionadas.map((mascota) => mascota.mascota_id),
+        tipo_servicio: tipoServicio,
+        duracion_minutos: parseInt(duracion),
+        notas_dueno: notas,
+        lat,
+        lng,
+      };
+
       const servicio = await apiFetch("/servicio", {
         method: "POST",
-        body: JSON.stringify({
-          dueno_id: usuario.usuario_id,
-          mascota_id: mascotaSeleccionada.mascota_id,
-          tipo_servicio: tipoServicio,
-          duracion_minutos: parseInt(duracion),
-          notas_dueno: notas,
-          lat,
-          lng,
-        }),
+        body: JSON.stringify(payload),
       });
+
+      setServicioPendienteId(Number(servicio.servicio_id));
 
       Alert.alert(
         "¡Solicitud enviada!",
-        "Tu solicitud fue enviada. Un paseador la aceptará pronto.",
+        "Un paseador se encargará pronto. Te llevamos al mapa cuando acepten.",
         [{ text: "Ver en mapa", onPress: () => navigation.navigate("MapaCliente", { servicioId: servicio.servicio_id }) }]
       );
     } catch (e) {
@@ -88,25 +174,44 @@ export default function PeticionPaseo({ navigation }) {
         </View>
 
         <View style={styles.formCard}>
+          {/* UBICACIÓN GUARDADA */}
+          <Text style={styles.sectionLabel}>Ubicación guardada</Text>
+          <View style={styles.ubicacionCard}>
+            {direccionGuardada ? (
+              <>
+                <Text style={styles.ubicacionTitulo}>📍 Tu ubicación actual</Text>
+                <Text style={styles.ubicacionTexto}>{getDireccionLabel(direccionGuardada)}</Text>
+                {getDireccionCoords(direccionGuardada) ? (
+                  <Text style={styles.ubicacionCoords}>
+                    Lat: {getDireccionCoords(direccionGuardada).latitud.toFixed(6)}
+                    {'\n'}Lng: {getDireccionCoords(direccionGuardada).longitud.toFixed(6)}
+                  </Text>
+                ) : null}
+              </>
+            ) : (
+              <Text style={styles.emptyText}>No tienes una ubicación guardada seleccionada en el mapa.</Text>
+            )}
+          </View>
+
           {/* MASCOTA */}
-          <Text style={styles.sectionLabel}>Selecciona tu mascota</Text>
+          <Text style={styles.sectionLabel}>Selecciona una o más mascotas</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.mascotaScroll}>
             {mascotas.map((m) => (
               <TouchableOpacity
                 key={m.mascota_id}
                 style={[
                   styles.mascotaChip,
-                  mascotaSeleccionada?.mascota_id === m.mascota_id && styles.chipSelected,
+                  mascotasSeleccionadas.some((item) => item.mascota_id === m.mascota_id) && styles.chipSelected,
                 ]}
-                onPress={() => setMascotaSeleccionada(m)}
+                onPress={() => toggleMascotaSeleccionada(m)}
               >
                 <Text
                   style={[
                     styles.chipText,
-                    mascotaSeleccionada?.mascota_id === m.mascota_id && styles.chipTextSelected,
+                    mascotasSeleccionadas.some((item) => item.mascota_id === m.mascota_id) && styles.chipTextSelected,
                   ]}
                 >
-                  🐶 {m.nombre}
+                  🐶 {getMascotaLabel(m)}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -158,10 +263,12 @@ export default function PeticionPaseo({ navigation }) {
           />
 
           {/* RESUMEN */}
-          {mascotaSeleccionada && (
+          {mascotasSeleccionadas.length > 0 && (
             <View style={styles.resumenCard}>
               <Text style={styles.resumenTitle}>Resumen</Text>
-              <Text style={styles.resumenItem}>🐶 Mascota: <Text style={styles.resumenVal}>{mascotaSeleccionada.nombre}</Text></Text>
+              <Text style={styles.resumenItem}>
+                🐶 Mascotas: <Text style={styles.resumenVal}>{mascotasSeleccionadas.map((m) => getMascotaLabel(m)).join(", ")}</Text>
+              </Text>
               <Text style={styles.resumenItem}>🦮 Servicio: <Text style={styles.resumenVal}>{tipoServicio}</Text></Text>
               <Text style={styles.resumenItem}>⏱ Duración: <Text style={styles.resumenVal}>{duracion} min</Text></Text>
             </View>
@@ -254,6 +361,31 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 2 },
+  },
+  ubicacionCard: {
+    backgroundColor: "rgba(255, 255, 255, 0.75)",
+    borderRadius: s(16),
+    padding: s(14),
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.7)",
+  },
+  ubicacionTitulo: {
+    fontSize: ms(14),
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: vs(6),
+  },
+  ubicacionTexto: {
+    fontSize: ms(13),
+    color: "#333",
+    fontWeight: "600",
+    lineHeight: 20,
+  },
+  ubicacionCoords: {
+    marginTop: vs(8),
+    fontSize: ms(12),
+    color: "#555",
+    lineHeight: 18,
   },
   sectionLabel: { fontSize: ms(14), fontWeight: "bold", color: "#555", marginTop: vs(16), marginBottom: vs(8) },
   mascotaScroll: { marginBottom: vs(4) },

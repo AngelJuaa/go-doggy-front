@@ -6,10 +6,12 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Alert,
   Platform,
 } from "react-native";
 import { styles } from "./MapaPaseadorStyles";
 import { requestLocationPermission, getCurrentPosition, watchPosition } from "../../utils/geo";
+import { apiFetch } from "../../utils/api";
 
 const DEFAULT_LOCATION = { latitude: 20.907715, longitude: -100.707582 };
 
@@ -31,7 +33,8 @@ if (Platform.OS !== "web") {
 }
 
 export default function MapaPaseador({ route, navigation }) {
-  const { servicioActivoId } = route?.params || {};
+  const { servicioActivoId: routeServicioActivoId, destino } = route?.params || {};
+  const servicioActivoId = routeServicioActivoId || null;
 
   const [miPos, setMiPos]             = useState(null);
   const [miRuta, setMiRuta]           = useState([]);
@@ -40,6 +43,8 @@ export default function MapaPaseador({ route, navigation }) {
   const [loading, setLoading]         = useState(true);
   const [expanded, setExpanded]       = useState(false);
   const [error, setError]             = useState(null);
+  const [cronometroSegundos, setCronometroSegundos] = useState(0);
+  const [finalizandoServicio, setFinalizandoServicio] = useState(false);
 
   const iframeRef  = useRef(null);
   const watchRef   = useRef(null);
@@ -60,18 +65,26 @@ export default function MapaPaseador({ route, navigation }) {
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     const map = L.map('map').setView([${DEFAULT_LOCATION.latitude},${DEFAULT_LOCATION.longitude}], 15);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+      maxZoom:20,
+      subdomains:'abcd',
+      attribution:'&copy; OpenStreetMap &copy; CARTO'
+    }).addTo(map);
 
     const walkerIcon = L.divIcon({
-      html:'<div style="font-size:28px;line-height:28px">📍</div>',
-      className:'', iconSize:[28,28], iconAnchor:[14,28]
+      className:'',
+      iconSize:[32,32],
+      iconAnchor:[16,32],
+      html:'<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(145deg,#34d399,#059669);border:3px solid #ffffff;box-shadow:0 8px 18px rgba(5,150,105,.35);display:flex;align-items:center;justify-content:center;color:white;font-size:14px;">P</div>'
     });
     let walkerMarker = null;
     let routeLine = null;
+    let destinoMarker = null;
+    let destinoLine = null;
 
     window.addEventListener('message', function(ev) {
       if (!ev.data || ev.data.type !== 'updateWalker') return;
-      const {lat, lng, route} = ev.data;
+      const {lat, lng, route, destino} = ev.data;
 
       if (!walkerMarker) {
         walkerMarker = L.marker([lat, lng], {icon: walkerIcon})
@@ -83,7 +96,34 @@ export default function MapaPaseador({ route, navigation }) {
 
       if (route && route.length > 1) {
         if (routeLine) map.removeLayer(routeLine);
-        routeLine = L.polyline(route, {color:'#7CEDA3', weight:4}).addTo(map);
+        routeLine = L.polyline(route, {
+          color:'#047857',
+          weight:5,
+          opacity:0.9,
+          lineJoin:'round',
+          dashArray:'10, 8'
+        }).addTo(map);
+      }
+
+      if (destino && Number.isFinite(destino.lat) && Number.isFinite(destino.lng)) {
+        if (!destinoMarker) {
+          destinoMarker = L.marker([destino.lat, destino.lng]).addTo(map).bindPopup('📍 Cliente');
+        } else {
+          destinoMarker.setLatLng([destino.lat, destino.lng]);
+        }
+        if (destinoLine) {
+          map.removeLayer(destinoLine);
+          destinoLine = null;
+        }
+        destinoLine = L.polyline([[lat, lng], [destino.lat, destino.lng]], {
+          color:'#dc2626',
+          weight:4,
+          opacity:0.85,
+          dashArray:'8, 6'
+        }).addTo(map);
+      } else if (destinoMarker) {
+        map.removeLayer(destinoMarker);
+        destinoMarker = null;
       }
     });
   </script>
@@ -174,6 +214,40 @@ export default function MapaPaseador({ route, navigation }) {
   };
   const nativeRoute = miRuta.map(p => ({ latitude: p[0], longitude: p[1] }));
 
+  useEffect(() => {
+    let intervalId = null;
+    if (servicioActivoId) {
+      intervalId = setInterval(() => {
+        setCronometroSegundos((prev) => prev + 1);
+      }, 1000);
+    }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [servicioActivoId]);
+
+  const finalizarServicio = async () => {
+    if (!servicioActivoId || finalizandoServicio) return;
+    Alert.alert("Finalizar paseo", "¿Estás seguro de finalizar este paseo?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Finalizar",
+        onPress: async () => {
+          try {
+            setFinalizandoServicio(true);
+            await apiFetch(`/servicio/${servicioActivoId}/finalizar`, { method: "PUT" });
+            setFinalizandoServicio(false);
+            Alert.alert("¡Paseo finalizado!", "El paseo ha sido completado.");
+            navigation.navigate("Inicio_paseador");
+          } catch (error) {
+            setFinalizandoServicio(false);
+            Alert.alert("Error", error.message || "No se pudo finalizar el paseo.");
+          }
+        },
+      },
+    ]);
+  };
+
   const sendInitialPosition = () => {
     if (miPos) {
       iframeRef.current?.contentWindow?.postMessage({
@@ -181,6 +255,9 @@ export default function MapaPaseador({ route, navigation }) {
         lat:   miPos.latitude,
         lng:   miPos.longitude,
         route: rutaRef.current,
+        destino: destino && Number.isFinite(destino.lat) && Number.isFinite(destino.lng)
+          ? destino
+          : null,
       }, "*");
     }
   };
@@ -215,6 +292,26 @@ export default function MapaPaseador({ route, navigation }) {
               </Text>
             ) : null}
           </View>
+
+          {servicioActivoId ? (
+            <View style={styles.activeMapBannerTop}>
+              <View>
+                <Text style={styles.activeBannerTitle}>Paseo en curso</Text>
+                <Text style={styles.activeBannerTime}>
+                  {`${String(Math.floor(cronometroSegundos / 60)).padStart(2, '0')}:${String(cronometroSegundos % 60).padStart(2, '0')}`}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.activeBannerButton, finalizandoServicio && styles.activeBannerButtonDisabled]}
+                onPress={finalizarServicio}
+                disabled={finalizandoServicio}
+              >
+                <Text style={styles.activeBannerButtonText}>
+                  {finalizandoServicio ? "Finalizando..." : "Finalizar paseo"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
 
           {/* CONTENEDOR DEL MAPA */}
           <View style={[styles.mapContainer, expanded && styles.mapContainerExpanded]}>
