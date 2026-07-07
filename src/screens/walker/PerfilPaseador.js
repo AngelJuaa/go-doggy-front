@@ -102,7 +102,7 @@ export default function PerfilPaseador({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F5F0" },
+  container: { flex: 1, backgroundColor: "#fff" },
   header: { paddingTop: vs(50), paddingHorizontal: s(20), alignItems: "flex-end" },
   back: { fontSize: ms(26) },
   profileSection: { alignItems: "center", marginBottom: vs(25) },

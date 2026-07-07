@@ -2,7 +2,7 @@ import { StyleSheet } from "react-native";
 import { s, vs, ms } from "../../../utils/responsive";
 
 export const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F5F0" },
+  container: { flex: 1, backgroundColor: "#fff" },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",

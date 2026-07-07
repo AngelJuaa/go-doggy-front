@@ -23,6 +23,7 @@ export default function InicioPaseador({ navigation }) {
   const [conectado, setConectado]           = useState(false);
   const [confirmFinalizar, setConfirmFinalizar] = useState(false);
   const [clientePickup, setClientePickup]       = useState(null); // {lat,lng,texto}
+  const [servicioInfo, setServicioInfo]         = useState(null); // datos completos del servicio aceptado
   const { showToast, ToastComponent } = useToast();
 
   const watchRef          = useRef(null);
@@ -205,6 +206,19 @@ export default function InicioPaseador({ navigation }) {
       setEstadoServicio("en_camino");
       setMascotaActiva(solicitudPendiente.mascota_nombre || null);
 
+      // Guardar toda la info del servicio para el panel
+      setServicioInfo({
+        dueno_nombre:    solicitudPendiente.dueno_nombre,
+        mascota_nombre:  solicitudPendiente.mascota_nombre,
+        tipo_servicio:   solicitudPendiente.tipo_servicio,
+        notas:           solicitudPendiente.notas,
+        calle:           solicitudPendiente.direccion_calle,
+        numero:          solicitudPendiente.direccion_numero,
+        colonia:         solicitudPendiente.direccion_colonia,
+        instrucciones:   solicitudPendiente.direccion_instrucciones,
+        texto:           solicitudPendiente.direccion_texto,
+      });
+
       // Mostrar dirección de recogida del cliente en el mapa
       if (solicitudPendiente.lat && solicitudPendiente.lng) {
         const pickup = {
@@ -242,6 +256,7 @@ export default function InicioPaseador({ navigation }) {
     servicioActivoRef.current = null;
     clientePickupRef.current  = null;
     setClientePickup(null);
+    setServicioInfo(null);
     setServicioActivo(null);
     setEstadoServicio(null);
     setMascotaActiva(null);
@@ -282,31 +297,58 @@ export default function InicioPaseador({ navigation }) {
         </View>
       </View>
 
-      {/* BANNER SERVICIO ACTIVO (sobre el mapa) */}
-      {servicioActivo && (
+      {/* PANEL DETALLADO — en camino a recoger mascota */}
+      {servicioActivo && estadoServicio === "en_camino" && (
+        <View style={styles.infoPanel}>
+          {/* Fila superior: mascota + dueño */}
+          <View style={styles.infoPanelTop}>
+            <Text style={styles.infoPanelMascota}>🐶 {servicioInfo?.mascota_nombre || mascotaActiva}</Text>
+            <Text style={styles.infoPanelDueno}>👤 {servicioInfo?.dueno_nombre || "Cliente"}</Text>
+          </View>
+
+          {/* Dirección */}
+          <View style={styles.infoPanelAddr}>
+            <Text style={styles.infoPanelAddrIcon}>📍</Text>
+            <View style={{ flex: 1 }}>
+              {servicioInfo?.calle ? (
+                <>
+                  <Text style={styles.infoPanelAddrMain}>
+                    {servicioInfo.calle}{servicioInfo.numero ? ` #${servicioInfo.numero}` : ""}
+                  </Text>
+                  {servicioInfo.colonia ? (
+                    <Text style={styles.infoPanelAddrSub}>{servicioInfo.colonia}</Text>
+                  ) : null}
+                </>
+              ) : servicioInfo?.texto ? (
+                <Text style={styles.infoPanelAddrMain}>{servicioInfo.texto}</Text>
+              ) : (
+                <Text style={styles.infoPanelAddrSub}>Ubicación por GPS</Text>
+              )}
+              {servicioInfo?.instrucciones ? (
+                <Text style={styles.infoPanelInstr}>ℹ️ {servicioInfo.instrucciones}</Text>
+              ) : null}
+            </View>
+          </View>
+
+          {/* Notas del dueño */}
+          {servicioInfo?.notas ? (
+            <Text style={styles.infoPanelNotas}>📝 {servicioInfo.notas}</Text>
+          ) : null}
+
+          {/* Botón recoger */}
+          <TouchableOpacity style={styles.btnIniciarPaseo} onPress={iniciarPaseo}>
+            <Text style={styles.btnIniciarPaseoText}>🐾 Ya recogí a la mascota</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* BANNER SIMPLE — paseo en curso */}
+      {servicioActivo && estadoServicio === "activo" && (
         <View style={styles.activoBanner}>
-          {estadoServicio === "en_camino" ? (
-            <>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.activoText}>
-                  🚶 En camino a recoger a {mascotaActiva || "la mascota"}
-                </Text>
-                {clientePickup?.texto ? (
-                  <Text style={styles.activoDirText}>📍 {clientePickup.texto}</Text>
-                ) : null}
-              </View>
-              <TouchableOpacity style={styles.btnIniciarPaseo} onPress={iniciarPaseo}>
-                <Text style={styles.btnIniciarPaseoText}>🐾 Recoger mascota</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <Text style={styles.activoText}>🐕 Paseo en curso — GPS activo</Text>
-              <TouchableOpacity style={styles.btnFinalizar} onPress={finalizarServicio}>
-                <Text style={styles.btnFinalizarText}>Finalizar</Text>
-              </TouchableOpacity>
-            </>
-          )}
+          <Text style={styles.activoText}>🐕 Paseo en curso — GPS activo</Text>
+          <TouchableOpacity style={styles.btnFinalizar} onPress={finalizarServicio}>
+            <Text style={styles.btnFinalizarText}>Finalizar</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -429,7 +471,38 @@ const styles = StyleSheet.create({
   dot: { width: s(10), height: s(10), borderRadius: s(5) },
   backIcon: { fontSize: ms(20), color: "#333" },
 
-  // Banner servicio activo (flotante sobre mapa)
+  // Panel detallado al ir en camino
+  infoPanel: {
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#c8f0e0",
+    paddingHorizontal: s(14),
+    paddingTop: vs(10),
+    paddingBottom: vs(8),
+    gap: vs(6),
+  },
+  infoPanelTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  infoPanelMascota: { fontSize: ms(14), fontWeight: "bold", color: "#1a1a1a" },
+  infoPanelDueno:   { fontSize: ms(12), color: "#555" },
+  infoPanelAddr: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: s(6),
+    backgroundColor: "#EDF9F4",
+    borderRadius: s(8),
+    padding: s(8),
+  },
+  infoPanelAddrIcon:  { fontSize: ms(14), marginTop: vs(1) },
+  infoPanelAddrMain:  { fontSize: ms(13), fontWeight: "600", color: "#1a1a1a" },
+  infoPanelAddrSub:   { fontSize: ms(12), color: "#555", marginTop: vs(2) },
+  infoPanelInstr:     { fontSize: ms(11), color: "#22a06b", marginTop: vs(3), fontStyle: "italic" },
+  infoPanelNotas:     { fontSize: ms(12), color: "#666", paddingHorizontal: s(4) },
+
+  // Banner simple paseo en curso
   activoBanner: {
     flexDirection: "row",
     alignItems: "center",
@@ -438,8 +511,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: s(14),
     paddingVertical: vs(8),
   },
-  activoText: { fontSize: ms(13), fontWeight: "bold", color: "#1a1a1a" },
-  activoDirText: { fontSize: ms(11), color: "#1a4731", marginTop: vs(2) },
+  activoText: { fontSize: ms(13), fontWeight: "bold", color: "#1a1a1a", flex: 1 },
   btnFinalizar: {
     backgroundColor: "#dc3545",
     borderRadius: s(8),

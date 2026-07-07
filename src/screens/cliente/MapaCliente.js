@@ -54,6 +54,8 @@ const cardStyles = StyleSheet.create({
   info: { flex: 1 },
   nombre: { fontSize: 15, fontWeight: "700", color: "#1a1a1a" },
   calif: { fontSize: 12, color: "#555", marginTop: 2 },
+  numCalif: { fontSize: 11, color: "#888" },
+  bio: { fontSize: 11, color: "#777", marginTop: 3, fontStyle: "italic" },
   badge: {
     backgroundColor: "#EDF9F4",
     borderRadius: 12,
@@ -208,12 +210,14 @@ const ESTADO_COLOR = {
   en_camino: "#007bff",
   activo:    "#28a745",
   finalizado:"#6c757d",
+  cancelado: "#dc3545",
 };
 const ESTADO_LABEL = {
   esperando:  "⏳ Esperando paseador...",
   en_camino:  "🚶 Paseador en camino",
   activo:     "🐾 Paseo en curso",
   finalizado: "✅ Paseo finalizado",
+  cancelado:  "❌ Solicitud cancelada",
 };
 
 export default function MapaCliente({ route, navigation }) {
@@ -368,7 +372,7 @@ export default function MapaCliente({ route, navigation }) {
     fetch(`${API_URL}/servicio/${servicioId}`)
       .then((r) => r.json())
       .then((data) => {
-        const ESTADO_MAP = { creado: "esperando", en_camino: "en_camino", activo: "activo", completado: "finalizado" };
+        const ESTADO_MAP = { creado: "esperando", en_camino: "en_camino", activo: "activo", completado: "finalizado", cancelado: "cancelado" };
         if (ESTADO_MAP[data.estado]) setEstado(ESTADO_MAP[data.estado]);
         if (data.paseador_id) paseadorIdRef.current = data.paseador_id;
         if (data.paseador_nombre) {
@@ -377,6 +381,8 @@ export default function MapaCliente({ route, navigation }) {
             url_foto_perfil:       data.paseador_foto,
             telefono:              data.paseador_telefono,
             calificacion_promedio: data.paseador_calificacion,
+            num_calificaciones:    data.paseador_num_calificaciones,
+            biografia:             data.paseador_biografia,
           });
         }
         setServicioData({
@@ -447,11 +453,17 @@ export default function MapaCliente({ route, navigation }) {
       showToast("🐾 ¡Tu paseador ya recogió a tu mascota! El paseo comenzó.", "success");
     });
 
+    socket.on("servicio:cancelado", () => {
+      setEstado("cancelado");
+      showToast("Tu solicitud fue cancelada — ningún paseador la aceptó 😔", "warning");
+    });
+
     return () => {
       socket.off("servicio:aceptado");
       socket.off("paseador:location");
       socket.off("servicio:finalizado");
       socket.off("servicio:iniciado");
+      socket.off("servicio:cancelado");
     };
   }, [servicioId]);
 
@@ -808,6 +820,28 @@ export default function MapaCliente({ route, navigation }) {
 
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
+      {/* OVERLAY SOLICITUD CANCELADA */}
+      {estado === "cancelado" && (
+        <View style={finStyles.overlay}>
+          <Text style={finStyles.title}>😔 Solicitud cancelada</Text>
+          <Text style={[finStyles.ratingLabel, { marginBottom: 20 }]}>
+            Ningún paseador aceptó tu solicitud en este momento.{"\n"}Puedes intentarlo de nuevo.
+          </Text>
+          <TouchableOpacity
+            style={[finStyles.btn, { backgroundColor: "#99D9C1", alignSelf: "stretch" }]}
+            onPress={() => navigation.navigate("PeticionPaseo")}
+          >
+            <Text style={finStyles.btnTxt}>🔁 Solicitar de nuevo</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[finStyles.btn, { alignSelf: "stretch", marginTop: 10 }]}
+            onPress={() => navigation.navigate("Inicio_cliente")}
+          >
+            <Text style={[finStyles.btnTxt, { color: "#aaa" }]}>Volver al inicio</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* MODAL PASEO FINALIZADO */}
       {estado === "finalizado" && (
         <View style={finStyles.overlay}>
@@ -887,7 +921,7 @@ export default function MapaCliente({ route, navigation }) {
       )}
 
       {/* TARJETA DEL PASEADOR — aparece al ser aceptado */}
-      {paseadorInfo && estado !== "esperando" && estado !== "finalizado" && (
+      {paseadorInfo && estado !== "esperando" && estado !== "finalizado" && estado !== "cancelado" && (
         <View style={cardStyles.card}>
           <View style={cardStyles.avatar}>
             <Text style={cardStyles.avatarText}>
@@ -897,9 +931,15 @@ export default function MapaCliente({ route, navigation }) {
           <View style={cardStyles.info}>
             <Text style={cardStyles.nombre}>{paseadorInfo.nombre_completo}</Text>
             <Text style={cardStyles.calif}>
-              {"⭐".repeat(Math.min(5, Math.round(parseFloat(paseadorInfo.calificacion_promedio) || 0)))}
-              {"  "}{(parseFloat(paseadorInfo.calificacion_promedio) || 0).toFixed(1)} / 5
+              ⭐ {(parseFloat(paseadorInfo.calificacion_promedio) || 0).toFixed(1)} / 5
+              {"  "}
+              <Text style={cardStyles.numCalif}>
+                ({paseadorInfo.num_calificaciones || 0} calificaciones)
+              </Text>
             </Text>
+            {paseadorInfo.biografia ? (
+              <Text style={cardStyles.bio} numberOfLines={2}>{paseadorInfo.biografia}</Text>
+            ) : null}
           </View>
           <View style={cardStyles.badge}>
             <Text style={cardStyles.badgeTxt}>

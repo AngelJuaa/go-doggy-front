@@ -1,17 +1,36 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useCallback } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { s, vs, ms } from "../../utils/responsive";
 import { apiFetch } from "../../utils/api";
 import storage from "../../utils/storage";
 
+const ESTADO_LABEL = {
+  creado:     "⏳ Pendiente",
+  en_camino:  "🚶 En camino",
+  activo:     "🐾 En curso",
+  completado: "✅ Completado",
+  cancelado:  "❌ Cancelado",
+};
+const ESTADO_COLOR = {
+  creado:     "#FFA500",
+  en_camino:  "#007bff",
+  activo:     "#28a745",
+  completado: "#22a06b",
+  cancelado:  "#dc3545",
+};
+
 export default function PaseosPaseador({ navigation }) {
   const [paseos, setPaseos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filtro, setFiltro] = useState("Todos");
 
-  useEffect(() => {
-    const u = JSON.parse(storage.getItem("usuario") || "{}");
-    if (u.usuario_id) cargar(u.usuario_id);
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      const u = JSON.parse(storage.getItem("usuario") || "{}");
+      if (u.usuario_id) cargar(u.usuario_id);
+    }, [])
+  );
 
   const cargar = async (id) => {
     try {
@@ -24,13 +43,15 @@ export default function PaseosPaseador({ navigation }) {
     }
   };
 
+  const filtrados = paseos.filter((p) => {
+    if (filtro === "Completados") return p.estado === "completado";
+    if (filtro === "Activos")    return ["creado", "en_camino", "activo"].includes(p.estado);
+    return true;
+  });
+
   const gananciasTotal = paseos
     .filter((p) => p.estado === "completado")
     .reduce((sum, p) => sum + parseFloat(p.costo_total || 0), 0);
-
-  const estadoColor = {
-    creado: "#FFA500", en_camino: "#007bff", completado: "#28a745", cancelado: "#dc3545",
-  };
 
   return (
     <View style={styles.container}>
@@ -38,7 +59,7 @@ export default function PaseosPaseador({ navigation }) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.back}>↩</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>✅ Paseos realizados</Text>
+        <Text style={styles.title}>✅ Mis paseos</Text>
         <View />
       </View>
 
@@ -49,24 +70,41 @@ export default function PaseosPaseador({ navigation }) {
         </View>
       )}
 
+      {/* FILTROS */}
+      <View style={styles.filtroRow}>
+        {["Todos", "Completados", "Activos"].map((f) => (
+          <TouchableOpacity
+            key={f}
+            style={[styles.filtroChip, filtro === f && styles.filtroSelected]}
+            onPress={() => setFiltro(f)}
+          >
+            <Text style={[styles.filtroText, filtro === f && styles.filtroTextSelected]}>{f}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
       {loading ? (
         <ActivityIndicator size="large" color="#99D9C1" style={{ marginTop: vs(40) }} />
       ) : (
         <ScrollView contentContainerStyle={styles.content}>
-          {paseos.length === 0 ? (
-            <Text style={styles.empty}>No tienes paseos registrados aún.</Text>
+          {filtrados.length === 0 ? (
+            <Text style={styles.empty}>No hay paseos en esta categoría.</Text>
           ) : (
-            paseos.map((p) => (
+            filtrados.map((p) => (
               <View key={p.servicio_id} style={styles.card}>
                 <View style={styles.cardHeader}>
                   <Text style={styles.mascota}>🐶 {p.mascota_nombre}</Text>
-                  <View style={[styles.badge, { backgroundColor: estadoColor[p.estado] || "#999" }]}>
-                    <Text style={styles.badgeText}>{p.estado}</Text>
+                  <View style={[styles.badge, { backgroundColor: ESTADO_COLOR[p.estado] || "#999" }]}>
+                    <Text style={styles.badgeText}>{ESTADO_LABEL[p.estado] || p.estado}</Text>
                   </View>
                 </View>
                 <Text style={styles.detail}>Dueño: {p.dueno_nombre}</Text>
                 <Text style={styles.detail}>Tipo: {p.tipo_servicio} · {p.duracion_minutos} min</Text>
-                <Text style={styles.detail}>Solicitado: {new Date(p.hora_solicitada).toLocaleDateString()}</Text>
+                <Text style={styles.detail}>
+                  Fecha: {new Date(p.hora_solicitada).toLocaleDateString("es-MX", {
+                    day: "2-digit", month: "short", year: "numeric",
+                  })}
+                </Text>
                 {p.estado === "completado" && parseFloat(p.costo_total || 0) > 0 && (
                   <View style={styles.costoRow}>
                     <Text style={styles.costoText}>💰 ${parseFloat(p.costo_total).toFixed(2)} MXN</Text>
@@ -110,6 +148,11 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: s(20), paddingTop: vs(50), paddingBottom: vs(10), backgroundColor: "#fff" },
   back: { fontSize: ms(24) },
   title: { fontSize: ms(17), fontWeight: "bold", color: "#333" },
+  filtroRow:          { flexDirection: "row", padding: s(12), gap: s(8), backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#eee" },
+  filtroChip:         { paddingHorizontal: s(16), paddingVertical: vs(6), borderRadius: s(20), backgroundColor: "#f0f0f0" },
+  filtroSelected:     { backgroundColor: "#99D9C1" },
+  filtroText:         { fontSize: ms(13), color: "#555", fontWeight: "600" },
+  filtroTextSelected: { color: "#fff" },
   content: { padding: s(16), paddingBottom: vs(40) },
   empty: { textAlign: "center", color: "#999", marginTop: vs(40), fontSize: ms(14) },
   card: { backgroundColor: "#fff", borderRadius: s(14), padding: s(16), marginBottom: vs(12), elevation: 2 },

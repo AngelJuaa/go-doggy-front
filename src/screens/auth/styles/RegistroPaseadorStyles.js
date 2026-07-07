@@ -5,7 +5,7 @@ export const styles = StyleSheet.create({
   container: { flexGrow: 1, backgroundColor: "#fff", alignItems: "center" },
   headerImage: { width: "100%", height: hp(40), resizeMode: "cover" },
   formCard: {
-    backgroundColor: "#D9F2E6",
+    backgroundColor: "#F2EBD4",
     width: "90%",
     borderRadius: s(40),
     padding: s(25),

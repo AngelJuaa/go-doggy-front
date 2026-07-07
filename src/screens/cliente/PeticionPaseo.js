@@ -227,6 +227,7 @@ export default function PeticionPaseo({ navigation }) {
           lat:              pickupLat,
           lng:              pickupLng,
           direccion_texto:  pickupTexto,
+          direccion_id:     dirSeleccionada?.direccion_id || null,
         }),
       });
       setServicioCreado(servicio);
@@ -469,7 +470,7 @@ export default function PeticionPaseo({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container:  { flex: 1, backgroundColor: "#F5F5F0" },
+  container:  { flex: 1, backgroundColor: "#fff" },
   content:    { padding: s(20), paddingBottom: vs(40) },
   header:     { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: vs(20), paddingTop: vs(40) },
   back:       { fontSize: ms(26) },
@@ -497,12 +498,12 @@ const styles = StyleSheet.create({
   miniMapWrapper: { borderRadius: s(12), overflow: "hidden", marginBottom: vs(4), borderWidth: 1, borderColor: "#ddd" },
   mapHint:        { fontSize: ms(11), color: "#888", textAlign: "center", paddingVertical: vs(6), backgroundColor: "#fff" },
 
-  resumenCard:  { backgroundColor: "#fff", borderRadius: s(16), padding: s(16), marginTop: vs(16), borderWidth: 1, borderColor: "#99D9C1" },
+  resumenCard:  { backgroundColor: "#EDF9F4", borderRadius: s(16), padding: s(16), marginTop: vs(16), borderWidth: 1, borderColor: "#99D9C1" },
   resumenTitle: { fontSize: ms(15), fontWeight: "bold", color: "#333", marginBottom: vs(8) },
   resumenItem:  { fontSize: ms(13), color: "#666", marginBottom: vs(4) },
   resumenVal:   { fontWeight: "bold", color: "#333" },
 
-  btnSolicitar: { backgroundColor: "#7CEDA3", borderRadius: s(25), paddingVertical: vs(15), alignItems: "center", marginTop: vs(24) },
+  btnSolicitar: { backgroundColor: "#85E5B5", borderRadius: s(25), paddingVertical: vs(15), alignItems: "center", marginTop: vs(24) },
   btnDisabled:  { backgroundColor: "#ccc" },
   btnText:      { fontSize: ms(17), fontWeight: "bold", color: "#333" },
 

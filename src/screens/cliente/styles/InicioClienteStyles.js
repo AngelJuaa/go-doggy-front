@@ -2,7 +2,7 @@ import { StyleSheet } from "react-native";
 import { s, vs, ms, hp } from "../../../utils/responsive";
 
 export const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F2F2F2" },
+  container: { flex: 1, backgroundColor: "#fff" },
   navbar: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -19,7 +19,7 @@ export const styles = StyleSheet.create({
   scrollContent: { alignItems: "center", paddingBottom: hp(14) },
   petCard: {
     flexDirection: "row",
-    backgroundColor: "#D9D9D9",
+    backgroundColor: "#F2EBD4",
     borderRadius: s(50),
     width: "88%",
     height: vs(90),
@@ -31,7 +31,7 @@ export const styles = StyleSheet.create({
   petInfo: { marginLeft: s(14) },
   petName: { fontSize: ms(18), fontWeight: "bold" },
   searchCircle: {
-    backgroundColor: "#E6B5B5",
+    backgroundColor: "#85E5B5",
     width: s(140),
     height: s(140),
     borderRadius: s(70),
@@ -41,7 +41,7 @@ export const styles = StyleSheet.create({
   },
   searchText: { textAlign: "center", fontWeight: "bold", fontSize: ms(13) },
   addButton: {
-    backgroundColor: "#E6B5B5",
+    backgroundColor: "#85E5B5",
     width: s(80),
     height: vs(38),
     borderRadius: s(20),
@@ -53,7 +53,7 @@ export const styles = StyleSheet.create({
   historialBtn: {
     backgroundColor: "#EDF9F4",
     borderWidth: 1,
-    borderColor: "#99D9C1",
+    borderColor: "#85E5B5",
     borderRadius: s(20),
     paddingHorizontal: s(28),
     paddingVertical: vs(10),

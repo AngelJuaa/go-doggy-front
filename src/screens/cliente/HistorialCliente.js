@@ -9,7 +9,7 @@ import { apiFetch } from "../../utils/api";
 import storage from "../../utils/storage";
 import useToast from "../../utils/useToast";
 
-const FILTROS = ["Todos", "Completados", "Activos"];
+const FILTROS = ["Todos", "Completados", "Activos", "Cancelados"];
 
 const ESTADO_LABEL = {
   creado:     "⏳ Pendiente",
@@ -96,6 +96,7 @@ export default function HistorialCliente({ navigation }) {
   const filtrados = servicios.filter((s) => {
     if (filtro === "Completados") return s.estado === "completado";
     if (filtro === "Activos")     return ["creado", "en_camino", "activo"].includes(s.estado);
+    if (filtro === "Cancelados")  return s.estado === "cancelado";
     return true;
   });
 

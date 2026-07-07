@@ -204,7 +204,7 @@ export default function RegistroMascota({ navigation }) {
     }
   };
 
-  const selectedColor = "#D2B48C";
+  const selectedColor = "#7CEDA3";
   const unselectedColor = "#fff";
 
   return (
@@ -460,8 +460,8 @@ export default function RegistroMascota({ navigation }) {
                       style={[
                         styles.smallButton,
                         {
-                          borderColor: patas === n ? "#27ae60" : "#ccc",
-                          backgroundColor: patas === n ? "#d1f7e8" : "#fff",
+                          borderColor: patas === n ? "#7CEDA3" : "#ccc",
+                          backgroundColor: patas === n ? "#7CEDA3" : "#fff",
                         },
                       ]}
                     >
@@ -540,13 +540,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     height: "100vh",
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#fff",
   },
   headerRow: {
     flexDirection: "row",
     justifyContent: "flex-start",
     padding: s(10),
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#fff",
   },
   scrollContent: {
     padding: s(15),
@@ -605,7 +605,7 @@ const styles = StyleSheet.create({
   },
   input: {
     width: "100%",
-    backgroundColor: "#fff",
+    backgroundColor: "#D9D9D9",
     padding: s(11),
     borderRadius: s(8),
     borderWidth: 1,
@@ -614,7 +614,7 @@ const styles = StyleSheet.create({
   },
   inputMultiline: {
     width: "100%",
-    backgroundColor: "#fff",
+    backgroundColor: "#D9D9D9",
     padding: s(11),
     borderRadius: s(8),
     borderWidth: 1,
@@ -660,14 +660,14 @@ const styles = StyleSheet.create({
     fontSize: ms(12),
   },
   submitBtn: {
-    backgroundColor: "#A67C52",
+    backgroundColor: "#E6B5B5",
     padding: s(13),
     borderRadius: s(10),
     alignItems: "center",
     marginTop: vs(10),
   },
   submitText: {
-    color: "#333",
+    color: "#000",
     fontWeight: "bold",
     fontSize: ms(15),
   },

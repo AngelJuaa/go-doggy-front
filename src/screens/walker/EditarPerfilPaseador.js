@@ -223,7 +223,7 @@ export default function EditarPerfilPaseador({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F5F0" },
+  container: { flex: 1, backgroundColor: "#fff" },
   header: { flexDirection: "row", justifyContent: "space-between", padding: s(18), paddingTop: vs(50) },
   title: { fontSize: ms(26), textAlign: "center", fontFamily: "serif", marginBottom: vs(10) },
   formCard: { backgroundColor: "#99D9C1", marginHorizontal: s(18), borderRadius: s(40), padding: s(20), alignItems: "center", elevation: 5, marginBottom: vs(30) },
