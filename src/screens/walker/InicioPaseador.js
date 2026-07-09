@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Platform } from "react-native
 import useToast from "../../utils/useToast";
 import ConfirmModal from "../../components/ConfirmModal";
 import { s, vs, ms } from "../../utils/responsive";
-import { getSocket } from "../../utils/socket";
+import { getSocket, getPendingRequest, clearPendingRequest, subscribePending } from "../../utils/socket";
 import { apiFetch } from "../../utils/api";
 import storage from "../../utils/storage";
 import LiveMap from "../../components/LiveMap";
@@ -122,10 +122,14 @@ export default function InicioPaseador({ navigation }) {
     if (socket.connected) registrarOnline();
 
     iniciarGPS();
-    socket.on("servicio:nuevo", (data) => setSolicitudPendiente(data));
+    // Cargar solicitud que llegó mientras estaba en otra pantalla
+    const stored = getPendingRequest();
+    if (stored) setSolicitudPendiente(stored);
+    // Suscribir al store global (el listener del socket vive en socket.js)
+    const unsub = subscribePending((data) => setSolicitudPendiente(data));
     return () => {
       socket.off("connect", registrarOnline);
-      socket.off("servicio:nuevo");
+      unsub();
       detenerGPS();
     };
   }, []);
@@ -230,6 +234,7 @@ export default function InicioPaseador({ navigation }) {
         setClientePickup(pickup); // dispara useEffect → postMessage después del re-render
       }
 
+      clearPendingRequest();
       setSolicitudPendiente(null);
       iniciarGPS();
       showToast("¡Servicio aceptado! Ve a recoger a la mascota.", "success");
@@ -242,6 +247,7 @@ export default function InicioPaseador({ navigation }) {
     if (!solicitudPendiente) return;
     try {
       await apiFetch(`/servicio/${solicitudPendiente.servicio_id}/rechazar`, { method: "PUT" });
+      clearPendingRequest();
       setSolicitudPendiente(null);
     } catch (e) {
       showToast(e.message, "error");

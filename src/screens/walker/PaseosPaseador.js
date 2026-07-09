@@ -23,7 +23,7 @@ const ESTADO_COLOR = {
 export default function PaseosPaseador({ navigation }) {
   const [paseos, setPaseos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filtro, setFiltro] = useState("Todos");
+  const [filtro, setFiltro] = useState("Aceptados");
 
   useFocusEffect(
     useCallback(() => {
@@ -44,9 +44,9 @@ export default function PaseosPaseador({ navigation }) {
   };
 
   const filtrados = paseos.filter((p) => {
-    if (filtro === "Completados") return p.estado === "completado";
-    if (filtro === "Activos")    return ["creado", "en_camino", "activo"].includes(p.estado);
-    return true;
+    if (filtro === "Aceptados")  return ["en_camino", "activo", "completado"].includes(p.estado);
+    if (filtro === "Cancelados") return p.estado === "cancelado";
+    return p.estado !== "creado";
   });
 
   const gananciasTotal = paseos
@@ -72,7 +72,7 @@ export default function PaseosPaseador({ navigation }) {
 
       {/* FILTROS */}
       <View style={styles.filtroRow}>
-        {["Todos", "Completados", "Activos"].map((f) => (
+        {["Todos", "Aceptados", "Cancelados"].map((f) => (
           <TouchableOpacity
             key={f}
             style={[styles.filtroChip, filtro === f && styles.filtroSelected]}

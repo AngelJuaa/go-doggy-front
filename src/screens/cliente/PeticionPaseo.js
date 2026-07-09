@@ -230,6 +230,10 @@ export default function PeticionPaseo({ navigation }) {
           direccion_id:     dirSeleccionada?.direccion_id || null,
         }),
       });
+      if (servicio.sin_paseadores) {
+        showToast("No hay paseadores disponibles en este momento. Tu solicitud fue cancelada.", "error");
+        return;
+      }
       setServicioCreado(servicio);
       setConfirmVisible(true);
     } catch (e) {
