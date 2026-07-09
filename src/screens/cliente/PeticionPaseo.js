@@ -271,189 +271,189 @@ export default function PeticionPaseo({ navigation }) {
           <View />
         </View>
 
-        {/* MASCOTAS */}
-        <Text style={styles.sectionLabel}>Selecciona tu mascota</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.mascotaScroll}>
-          {mascotas.map((m) => (
+        {/* FORM CARD */}
+        <View style={styles.formCard}>
+
+          {/* MASCOTAS */}
+          <Text style={styles.sectionLabel}>Selecciona tu mascota</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.mascotaScroll}>
+            {mascotas.map((m) => (
+              <TouchableOpacity
+                key={m.mascota_id}
+                style={[styles.mascotaChip, mascotaSeleccionada?.mascota_id === m.mascota_id && styles.chipSelected]}
+                onPress={() => setMascotaSeleccionada(m)}
+              >
+                <Text style={[styles.chipText, mascotaSeleccionada?.mascota_id === m.mascota_id && styles.chipTextSelected]}>
+                  🐶 {m.nombre}
+                </Text>
+              </TouchableOpacity>
+            ))}
+            {mascotas.length === 0 && (
+              <Text style={styles.emptyText}>No tienes mascotas. Regístra una primero.</Text>
+            )}
+          </ScrollView>
+
+          {/* TIPO DE SERVICIO */}
+          <Text style={styles.sectionLabel}>Tipo de servicio</Text>
+          <View style={styles.optionRow}>
+            {tiposServicio.map((t) => (
+              <TouchableOpacity
+                key={t}
+                style={[styles.optionChip, tipoServicio === t && styles.chipSelected]}
+                onPress={() => setTipoServicio(t)}
+              >
+                <Text style={[styles.chipText, tipoServicio === t && styles.chipTextSelected]}>{t}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* DURACIÓN */}
+          <Text style={styles.sectionLabel}>Duración (minutos)</Text>
+          <View style={styles.optionRow}>
+            {duraciones.map((d) => (
+              <TouchableOpacity
+                key={d}
+                style={[styles.duracionChip, duracion === d && styles.chipSelected]}
+                onPress={() => setDuracion(d)}
+              >
+                <Text style={[styles.chipText, duracion === d && styles.chipTextSelected]}>{d} min</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* MÉTODO DE PAGO */}
+          <Text style={styles.sectionLabel}>Método de pago</Text>
+          <View style={styles.optionRow}>
+            {metodosPago.map((m) => (
+              <TouchableOpacity
+                key={m}
+                style={[styles.optionChip, metodoPago === m && styles.chipSelected]}
+                onPress={() => setMetodoPago(m)}
+              >
+                <Text style={[styles.chipText, metodoPago === m && styles.chipTextSelected]}>
+                  {m === "Efectivo" ? "💵 " : m === "Tarjeta" ? "💳 " : "📲 "}{m}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* COSTO ESTIMADO */}
+          <View style={styles.costoCard}>
+            <Text style={styles.costoLabel}>Costo estimado</Text>
+            <Text style={styles.costoValor}>${calcularCosto(tipoServicio, duracion)} MXN</Text>
+          </View>
+
+          {/* NOTAS */}
+          <Text style={styles.sectionLabel}>Notas para el paseador</Text>
+          <TextInput
+            style={styles.notasInput}
+            multiline
+            numberOfLines={3}
+            placeholder="Ej: Mi perro es amigable, tiene miedo a los coches..."
+            value={notas}
+            onChangeText={setNotas}
+            placeholderTextColor="#888"
+          />
+
+          {/* DIRECCIÓN DE RECOGIDA */}
+          <Text style={styles.sectionLabel}>Dirección de recogida</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: vs(8) }}>
             <TouchableOpacity
-              key={m.mascota_id}
-              style={[styles.mascotaChip, mascotaSeleccionada?.mascota_id === m.mascota_id && styles.chipSelected]}
-              onPress={() => setMascotaSeleccionada(m)}
+              style={[styles.addrChip, !dirSeleccionada && styles.addrChipSel]}
+              onPress={() => {
+                setDirSeleccionada(null);
+                if (locationStatus === "ok") enviarUbicacionAlMapa(locationLat, locationLng);
+              }}
             >
-              <Text style={[styles.chipText, mascotaSeleccionada?.mascota_id === m.mascota_id && styles.chipTextSelected]}>
-                🐶 {m.nombre}
+              <Text style={[styles.addrChipTxt, !dirSeleccionada && styles.addrChipTxtSel]}>
+                📡 Mi GPS
               </Text>
             </TouchableOpacity>
-          ))}
-          {mascotas.length === 0 && (
-            <Text style={styles.emptyText}>No tienes mascotas. Regístra una primero.</Text>
-          )}
-        </ScrollView>
+            {direcciones.map((dir) => (
+              <TouchableOpacity
+                key={dir.direccion_id}
+                style={[styles.addrChip, dirSeleccionada?.direccion_id === dir.direccion_id && styles.addrChipSel]}
+                onPress={() => seleccionarDireccion(dir)}
+              >
+                <Text style={[styles.addrChipTxt, dirSeleccionada?.direccion_id === dir.direccion_id && styles.addrChipTxtSel]} numberOfLines={1}>
+                  {dir.coordenadas_refinadas ? "📍 " : "🏠 "}
+                  {dir.nombre_referencia || dir.calle}
+                </Text>
+                {dir.coordenadas_refinadas && (
+                  <Text style={styles.addrExacta}>Exacta</Text>
+                )}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
 
-        {/* TIPO DE SERVICIO */}
-        <Text style={styles.sectionLabel}>Tipo de servicio</Text>
-        <View style={styles.optionRow}>
-          {tiposServicio.map((t) => (
-            <TouchableOpacity
-              key={t}
-              style={[styles.optionChip, tipoServicio === t && styles.chipSelected]}
-              onPress={() => setTipoServicio(t)}
-            >
-              <Text style={[styles.chipText, tipoServicio === t && styles.chipTextSelected]}>{t}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* DURACIÓN */}
-        <Text style={styles.sectionLabel}>Duración (minutos)</Text>
-        <View style={styles.optionRow}>
-          {duraciones.map((d) => (
-            <TouchableOpacity
-              key={d}
-              style={[styles.duracionChip, duracion === d && styles.chipSelected]}
-              onPress={() => setDuracion(d)}
-            >
-              <Text style={[styles.chipText, duracion === d && styles.chipTextSelected]}>{d} min</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* MÉTODO DE PAGO */}
-        <Text style={styles.sectionLabel}>Método de pago</Text>
-        <View style={styles.optionRow}>
-          {metodosPago.map((m) => (
-            <TouchableOpacity
-              key={m}
-              style={[styles.optionChip, metodoPago === m && styles.chipSelected]}
-              onPress={() => setMetodoPago(m)}
-            >
-              <Text style={[styles.chipText, metodoPago === m && styles.chipTextSelected]}>
-                {m === "Efectivo" ? "💵 " : m === "Tarjeta" ? "💳 " : "📲 "}{m}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* COSTO ESTIMADO */}
-        <View style={styles.costoCard}>
-          <Text style={styles.costoLabel}>Costo estimado</Text>
-          <Text style={styles.costoValor}>${calcularCosto(tipoServicio, duracion)} MXN</Text>
-        </View>
-
-        {/* NOTAS */}
-        <Text style={styles.sectionLabel}>Notas para el paseador</Text>
-        <TextInput
-          style={styles.notasInput}
-          multiline
-          numberOfLines={3}
-          placeholder="Ej: Mi perro es amigable, tiene miedo a los coches..."
-          value={notas}
-          onChangeText={setNotas}
-          placeholderTextColor="#aaa"
-        />
-
-        {/* DIRECCIÓN DE RECOGIDA */}
-        <Text style={styles.sectionLabel}>Dirección de recogida</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
-          {/* Opción: usar GPS */}
-          <TouchableOpacity
-            style={[styles.addrChip, !dirSeleccionada && styles.addrChipSel]}
-            onPress={() => {
-              setDirSeleccionada(null);
-              if (locationStatus === "ok") enviarUbicacionAlMapa(locationLat, locationLng);
-            }}
-          >
-            <Text style={[styles.addrChipTxt, !dirSeleccionada && styles.addrChipTxtSel]}>
-              📡 Mi GPS
+          {/* UBICACIÓN */}
+          <View style={styles.locationRow}>
+            <Text style={[styles.locationText, { color: locationColor() }]}>
+              {locationLabel()}
             </Text>
+            {locationStatus !== "loading" && (
+              <TouchableOpacity style={styles.refreshBtn} onPress={obtenerUbicacion}>
+                <Text style={styles.refreshText}>↺ Actualizar</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* MINI MAPA (web) */}
+          {isWeb && (
+            <View style={styles.miniMapWrapper}>
+              <iframe
+                ref={iframeRef}
+                title="Ubicación del servicio"
+                srcDoc={miniMapHtml}
+                sandbox="allow-scripts"
+                style={{ width: "100%", height: 200, border: "none", borderRadius: 12 }}
+              />
+              <Text style={styles.mapHint}>
+                {locationStatus === "fallback"
+                  ? "GPS no disponible — arrastra el pin 📍 para fijar tu ubicación"
+                  : "Arrastra el pin 📍 para ajustar tu ubicación exacta"}
+              </Text>
+            </View>
+          )}
+
+          {/* RESUMEN */}
+          {mascotaSeleccionada && (
+            <View style={styles.resumenCard}>
+              <Text style={styles.resumenTitle}>Resumen</Text>
+              <Text style={styles.resumenItem}>🐶 Mascota: <Text style={styles.resumenVal}>{mascotaSeleccionada.nombre}</Text></Text>
+              <Text style={styles.resumenItem}>🦮 Servicio: <Text style={styles.resumenVal}>{tipoServicio}</Text></Text>
+              <Text style={styles.resumenItem}>⏱ Duración: <Text style={styles.resumenVal}>{duracion} min</Text></Text>
+              <Text style={styles.resumenItem}>
+                📍 Recogida:{" "}
+                <Text style={[styles.resumenVal, { color: dirSeleccionada ? "#22a06b" : locationColor() }]}>
+                  {dirSeleccionada
+                    ? `${dirSeleccionada.nombre_referencia || dirSeleccionada.calle}${dirSeleccionada.coordenadas_refinadas ? " ✓" : ""}`
+                    : locationStatus === "ok" ? "GPS exacto" : locationStatus === "loading" ? "obteniendo..." : "manual (pin)"}
+                </Text>
+              </Text>
+              <Text style={styles.resumenItem}>
+                💳 Pago: <Text style={styles.resumenVal}>{metodoPago}</Text>
+              </Text>
+              <Text style={styles.resumenItem}>
+                💰 Costo: <Text style={[styles.resumenVal, { color: "#22a06b" }]}>${calcularCosto(tipoServicio, duracion)} MXN</Text>
+              </Text>
+            </View>
+          )}
+
+          {/* BOTÓN SOLICITAR */}
+          <TouchableOpacity
+            style={[styles.btnSolicitar, (loading || locationStatus === "loading") && styles.btnDisabled]}
+            onPress={solicitarPaseo}
+            disabled={loading || locationStatus === "loading"}
+          >
+            {loading ? (
+              <ActivityIndicator color="#000" />
+            ) : (
+              <Text style={styles.btnText}>🐾 Solicitar Paseo</Text>
+            )}
           </TouchableOpacity>
 
-          {/* Direcciones guardadas */}
-          {direcciones.map((dir) => (
-            <TouchableOpacity
-              key={dir.direccion_id}
-              style={[styles.addrChip, dirSeleccionada?.direccion_id === dir.direccion_id && styles.addrChipSel]}
-              onPress={() => seleccionarDireccion(dir)}
-            >
-              <Text style={[styles.addrChipTxt, dirSeleccionada?.direccion_id === dir.direccion_id && styles.addrChipTxtSel]} numberOfLines={1}>
-                {dir.coordenadas_refinadas ? "📍 " : "🏠 "}
-                {dir.nombre_referencia || dir.calle}
-              </Text>
-              {dir.coordenadas_refinadas && (
-                <Text style={styles.addrExacta}>Exacta</Text>
-              )}
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* UBICACIÓN GPS (solo si no hay dirección seleccionada) */}
-        {!dirSeleccionada && <Text style={styles.sectionLabel}>Tu ubicación GPS</Text>}
-        <View style={styles.locationRow}>
-          <Text style={[styles.locationText, { color: locationColor() }]}>
-            {locationLabel()}
-          </Text>
-          {locationStatus !== "loading" && (
-            <TouchableOpacity style={styles.refreshBtn} onPress={obtenerUbicacion}>
-              <Text style={styles.refreshText}>↺ Actualizar</Text>
-            </TouchableOpacity>
-          )}
         </View>
-
-        {/* MINI MAPA (web) */}
-        {isWeb && (
-          <View style={styles.miniMapWrapper}>
-            <iframe
-              ref={iframeRef}
-              title="Ubicación del servicio"
-              srcDoc={miniMapHtml}
-              sandbox="allow-scripts"
-              style={{ width: "100%", height: 200, border: "none", borderRadius: 12 }}
-            />
-            <Text style={styles.mapHint}>
-              {locationStatus === "fallback"
-                ? "GPS no disponible — arrastra el pin 📍 para fijar tu ubicación"
-                : "Arrastra el pin 📍 para ajustar tu ubicación exacta"}
-            </Text>
-          </View>
-        )}
-
-        {/* RESUMEN */}
-        {mascotaSeleccionada && (
-          <View style={styles.resumenCard}>
-            <Text style={styles.resumenTitle}>Resumen</Text>
-            <Text style={styles.resumenItem}>🐶 Mascota: <Text style={styles.resumenVal}>{mascotaSeleccionada.nombre}</Text></Text>
-            <Text style={styles.resumenItem}>🦮 Servicio: <Text style={styles.resumenVal}>{tipoServicio}</Text></Text>
-            <Text style={styles.resumenItem}>⏱ Duración: <Text style={styles.resumenVal}>{duracion} min</Text></Text>
-            <Text style={styles.resumenItem}>
-              📍 Recogida:{" "}
-              <Text style={[styles.resumenVal, { color: dirSeleccionada ? "#22a06b" : locationColor() }]}>
-                {dirSeleccionada
-                  ? `${dirSeleccionada.nombre_referencia || dirSeleccionada.calle}${dirSeleccionada.coordenadas_refinadas ? " ✓" : ""}`
-                  : locationStatus === "ok" ? "GPS exacto" : locationStatus === "loading" ? "obteniendo..." : "manual (pin)"}
-              </Text>
-            </Text>
-            <Text style={styles.resumenItem}>
-              💳 Pago: <Text style={styles.resumenVal}>{metodoPago}</Text>
-            </Text>
-            <Text style={styles.resumenItem}>
-              💰 Costo: <Text style={[styles.resumenVal, { color: "#22a06b" }]}>${calcularCosto(tipoServicio, duracion)} MXN</Text>
-            </Text>
-          </View>
-        )}
-
-        {/* BOTÓN SOLICITAR */}
-        <TouchableOpacity
-          style={[styles.btnSolicitar, (loading || locationStatus === "loading") && styles.btnDisabled]}
-          onPress={solicitarPaseo}
-          disabled={loading || locationStatus === "loading"}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.btnText}>🐾 Solicitar Paseo</Text>
-          )}
-        </TouchableOpacity>
-
       </ScrollView>
 
       <ConfirmModal
@@ -475,43 +475,45 @@ export default function PeticionPaseo({ navigation }) {
 
 const styles = StyleSheet.create({
   container:  { flex: 1, backgroundColor: "#fff" },
-  content:    { padding: s(20), paddingBottom: vs(40) },
-  header:     { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: vs(20), paddingTop: vs(40) },
+  content:    { paddingBottom: vs(40) },
+  header:     { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: s(20), paddingTop: vs(40), paddingBottom: vs(16) },
   back:       { fontSize: ms(26) },
   title:      { fontSize: ms(20), fontWeight: "bold", color: "#333" },
 
-  sectionLabel: { fontSize: ms(14), fontWeight: "bold", color: "#555", marginTop: vs(16), marginBottom: vs(8) },
+  formCard:   { backgroundColor: "#99D9C1", marginHorizontal: s(16), borderRadius: s(40), padding: s(20), elevation: 5, marginBottom: vs(20) },
+
+  sectionLabel: { fontSize: ms(13), fontWeight: "bold", color: "#333", marginTop: vs(12), marginBottom: vs(6) },
 
   mascotaScroll: { marginBottom: vs(4) },
-  mascotaChip:   { backgroundColor: "#fff", borderRadius: s(20), paddingHorizontal: s(16), paddingVertical: vs(8), marginRight: s(10), borderWidth: 2, borderColor: "#ddd" },
+  mascotaChip:   { backgroundColor: "#fff", borderRadius: s(20), paddingHorizontal: s(16), paddingVertical: vs(8), marginRight: s(10), borderWidth: 1, borderColor: "#ccc" },
   optionRow:     { flexDirection: "row", flexWrap: "wrap", gap: s(8), marginBottom: vs(4) },
-  optionChip:    { backgroundColor: "#fff", borderRadius: s(20), paddingHorizontal: s(14), paddingVertical: vs(7), borderWidth: 2, borderColor: "#ddd" },
-  duracionChip:  { backgroundColor: "#fff", borderRadius: s(16), paddingHorizontal: s(12), paddingVertical: vs(6), borderWidth: 2, borderColor: "#ddd" },
-  chipSelected:      { backgroundColor: "#99D9C1", borderColor: "#99D9C1" },
+  optionChip:    { backgroundColor: "#fff", borderRadius: s(20), paddingHorizontal: s(14), paddingVertical: vs(7), borderWidth: 1, borderColor: "#ccc" },
+  duracionChip:  { backgroundColor: "#fff", borderRadius: s(16), paddingHorizontal: s(12), paddingVertical: vs(6), borderWidth: 1, borderColor: "#ccc" },
+  chipSelected:      { backgroundColor: "#fff", borderColor: "#22a06b", borderWidth: 2 },
   chipText:          { fontSize: ms(13), color: "#555", fontWeight: "600" },
-  chipTextSelected:  { color: "#fff" },
-  emptyText:         { fontSize: ms(13), color: "#aaa", fontStyle: "italic" },
+  chipTextSelected:  { color: "#22a06b", fontWeight: "bold" },
+  emptyText:         { fontSize: ms(13), color: "#444", fontStyle: "italic" },
 
-  notasInput: { backgroundColor: "#fff", borderRadius: s(12), padding: s(12), borderWidth: 1, borderColor: "#ddd", fontSize: ms(14), minHeight: vs(80), textAlignVertical: "top", color: "#333" },
+  notasInput: { backgroundColor: "#D9D9D9", borderRadius: s(8), padding: s(11), fontSize: ms(14), minHeight: vs(80), textAlignVertical: "top", color: "#333" },
 
-  locationRow:  { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#fff", borderRadius: s(12), padding: s(12), borderWidth: 1, borderColor: "#ddd", marginBottom: vs(8) },
-  locationText: { fontSize: ms(12), fontWeight: "600", flex: 1 },
-  refreshBtn:   { marginLeft: s(8), backgroundColor: "#f0f0f0", borderRadius: s(8), paddingHorizontal: s(10), paddingVertical: vs(4) },
+  locationRow:  { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#D9D9D9", borderRadius: s(8), padding: s(11), marginBottom: vs(8) },
+  locationText: { fontSize: ms(12), fontWeight: "600", flex: 1, color: "#333" },
+  refreshBtn:   { marginLeft: s(8), backgroundColor: "#fff", borderRadius: s(8), paddingHorizontal: s(10), paddingVertical: vs(4) },
   refreshText:  { fontSize: ms(12), color: "#555", fontWeight: "600" },
 
-  miniMapWrapper: { borderRadius: s(12), overflow: "hidden", marginBottom: vs(4), borderWidth: 1, borderColor: "#ddd" },
-  mapHint:        { fontSize: ms(11), color: "#888", textAlign: "center", paddingVertical: vs(6), backgroundColor: "#fff" },
+  miniMapWrapper: { borderRadius: s(12), overflow: "hidden", marginBottom: vs(4) },
+  mapHint:        { fontSize: ms(11), color: "#555", textAlign: "center", paddingVertical: vs(6) },
 
-  resumenCard:  { backgroundColor: "#EDF9F4", borderRadius: s(16), padding: s(16), marginTop: vs(16), borderWidth: 1, borderColor: "#99D9C1" },
+  resumenCard:  { backgroundColor: "#fff", borderRadius: s(16), padding: s(16), marginTop: vs(12), borderWidth: 1, borderColor: "#22a06b" },
   resumenTitle: { fontSize: ms(15), fontWeight: "bold", color: "#333", marginBottom: vs(8) },
-  resumenItem:  { fontSize: ms(13), color: "#666", marginBottom: vs(4) },
+  resumenItem:  { fontSize: ms(13), color: "#555", marginBottom: vs(4) },
   resumenVal:   { fontWeight: "bold", color: "#333" },
 
-  btnSolicitar: { backgroundColor: "#85E5B5", borderRadius: s(25), paddingVertical: vs(15), alignItems: "center", marginTop: vs(24) },
+  btnSolicitar: { backgroundColor: "#E6B5B5", borderRadius: s(25), paddingVertical: vs(12), paddingHorizontal: s(45), alignItems: "center", marginTop: vs(20), alignSelf: "center" },
   btnDisabled:  { backgroundColor: "#ccc" },
-  btnText:      { fontSize: ms(17), fontWeight: "bold", color: "#333" },
+  btnText:      { fontSize: ms(17), fontWeight: "bold", color: "#000" },
 
-  costoCard: { backgroundColor: "#EDF9F4", borderRadius: s(12), padding: s(14), marginTop: vs(8), flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1, borderColor: "#99D9C1" },
+  costoCard: { backgroundColor: "#fff", borderRadius: s(8), padding: s(14), marginTop: vs(8), flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   costoLabel: { fontSize: ms(13), fontWeight: "600", color: "#555" },
   costoValor: { fontSize: ms(18), fontWeight: "bold", color: "#22a06b" },
 
