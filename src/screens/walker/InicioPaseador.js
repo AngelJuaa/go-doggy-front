@@ -211,7 +211,7 @@ export default function InicioPaseador({ navigation }) {
       setMascotaActiva(solicitudPendiente.mascota_nombre || null);
 
       // Guardar toda la info del servicio para el panel
-      setServicioInfo({
+      const infoBase = {
         dueno_nombre:    solicitudPendiente.dueno_nombre,
         mascota_nombre:  solicitudPendiente.mascota_nombre,
         tipo_servicio:   solicitudPendiente.tipo_servicio,
@@ -221,7 +221,24 @@ export default function InicioPaseador({ navigation }) {
         colonia:         solicitudPendiente.direccion_colonia,
         instrucciones:   solicitudPendiente.direccion_instrucciones,
         texto:           solicitudPendiente.direccion_texto,
-      });
+      };
+      setServicioInfo(infoBase);
+
+      // Si no hay dirección escrita, hacer reverse geocoding con las coordenadas
+      if (!infoBase.calle && solicitudPendiente.lat && solicitudPendiente.lng) {
+        apiFetch(`/geocode/reverse?lat=${solicitudPendiente.lat}&lng=${solicitudPendiente.lng}`)
+          .then((geo) => {
+            if (!geo || geo.error) return;
+            const a = geo.address || {};
+            const calle  = a.road || a.pedestrian || a.residential || a.cycleway || null;
+            const colonia = a.suburb || a.neighbourhood || a.city_district || a.quarter || null;
+            const numero  = a.house_number || null;
+            if (calle) {
+              setServicioInfo((prev) => ({ ...prev, calle, colonia, numero }));
+            }
+          })
+          .catch(() => {});
+      }
 
       // Mostrar dirección de recogida del cliente en el mapa
       if (solicitudPendiente.lat && solicitudPendiente.lng) {
