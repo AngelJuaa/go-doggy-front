@@ -1,0 +1,58 @@
+import { StyleSheet } from "react-native";
+import { s, vs, ms, hp } from "../../../utils/responsive";
+
+export const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#F2F2F2" },
+  navbar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    padding: s(18),
+    paddingTop: vs(50),
+  },
+  navIcon: { fontSize: ms(26) },
+  titleText: {
+    fontSize: ms(28),
+    textAlign: "center",
+    marginVertical: vs(18),
+    fontFamily: "serif",
+  },
+  list: { flex: 1 },
+  scrollContent: { alignItems: "center", paddingBottom: hp(14) },
+  item: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#D9D9D9",
+    borderRadius: s(50),
+    width: "88%",
+    minHeight: vs(90),
+    marginBottom: vs(18),
+    paddingVertical: vs(14),
+    paddingHorizontal: s(14),
+  },
+  iconCircle: {
+    width: s(52),
+    height: s(52),
+    borderRadius: s(26),
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: s(14),
+  },
+  iconText: { fontSize: ms(22), fontWeight: "900", color: "#fff" },
+  itemBody: { flex: 1 },
+  itemTitle: { fontSize: ms(15), fontWeight: "700", color: "#1a1a1a", marginBottom: vs(4) },
+  itemFecha: { fontSize: ms(12), color: "#555", fontWeight: "500" },
+  arrow: { fontSize: ms(14), color: "#333", marginLeft: s(10) },
+  bottomTab: {
+    flexDirection: "row",
+    backgroundColor: "#99D9C1",
+    height: vs(65),
+    position: "absolute",
+    bottom: 0,
+    width: "100%",
+    justifyContent: "space-around",
+    alignItems: "center",
+  },
+  tabIconImg: { width: s(38), height: s(38), resizeMode: "contain" },
+  tabItem: { alignItems: "center", justifyContent: "center" },
+  tabLabel: { fontSize: ms(11), fontWeight: "bold", color: "#333", marginBottom: vs(4) },
+});

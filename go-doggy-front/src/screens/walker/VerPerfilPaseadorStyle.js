@@ -1,0 +1,67 @@
+import { StyleSheet } from "react-native";
+import { s, vs, ms } from "../../utils/responsive";
+
+export const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#F2F4F8" },
+  header: { paddingTop: vs(50), paddingHorizontal: s(20), alignItems: "flex-start" },
+  back: { fontSize: ms(28), color: "#333" },
+  content: { paddingHorizontal: s(20), paddingBottom: vs(90) },
+  profileBox: { alignItems: "center", marginTop: vs(20), marginBottom: vs(24) },
+  profileImage: {
+    width: s(140),
+    height: s(140),
+    borderRadius: s(70),
+    borderWidth: 2,
+    borderColor: "#1F4D36",
+    marginBottom: vs(16),
+  },
+  nameText: { fontSize: ms(24), fontWeight: "bold", color: "#1F2937", marginBottom: vs(6) },
+  roleText: { fontSize: ms(14), color: "#4B5563", fontWeight: "600" },
+  infoCard: {
+    backgroundColor: "#99D9C1",
+    borderRadius: s(24),
+    padding: s(20),
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 6,
+    marginBottom: vs(24),
+  },
+  sectionTitle: { fontSize: ms(18), fontWeight: "bold", color: "#111827", marginBottom: vs(14) },
+  infoRow: {
+    marginBottom: vs(14),
+  },
+  infoLabel: { fontSize: ms(14), color: "#6B7280", marginBottom: vs(4) },
+  infoValue: { fontSize: ms(16), color: "#111827", fontWeight: "600" },
+  buttonRow: { flexDirection: "row", justifyContent: "space-between", gap: s(12) },
+  button: {
+    flex: 1,
+    paddingVertical: vs(14),
+    borderRadius: s(16),
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  editButton: { backgroundColor: "#0D6EFD" },
+  closeButton: { backgroundColor: "#DC3545" },
+  buttonText: { color: "#fff", fontSize: ms(15), fontWeight: "bold" },
+  bottomTab: {
+    flexDirection: "row",
+    backgroundColor: "#99D9C1",
+    height: vs(70),
+    justifyContent: "space-around",
+    alignItems: "center",
+  },
+  tabItem: {
+    alignItems: "center",
+    gap: vs(4),
+  },
+  tabIcon: {
+    fontSize: ms(20),
+  },
+  tabLabel: {
+    fontSize: ms(11),
+    fontWeight: "bold",
+    color: "#1A1A1A",
+  },
+});
