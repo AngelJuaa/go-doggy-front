@@ -212,15 +212,18 @@ export default function InicioPaseador({ navigation }) {
 
       // Guardar toda la info del servicio para el panel
       const infoBase = {
-        dueno_nombre:    solicitudPendiente.dueno_nombre,
-        mascota_nombre:  solicitudPendiente.mascota_nombre,
-        tipo_servicio:   solicitudPendiente.tipo_servicio,
-        notas:           solicitudPendiente.notas,
-        calle:           solicitudPendiente.direccion_calle,
-        numero:          solicitudPendiente.direccion_numero,
-        colonia:         solicitudPendiente.direccion_colonia,
-        instrucciones:   solicitudPendiente.direccion_instrucciones,
-        texto:           solicitudPendiente.direccion_texto,
+        dueno_nombre:   solicitudPendiente.dueno_nombre,
+        mascota_nombre: solicitudPendiente.mascota_nombre,
+        tipo_servicio:  solicitudPendiente.tipo_servicio,
+        notas:          solicitudPendiente.notas,
+        nombre_ref:     solicitudPendiente.direccion_nombre_ref,
+        calle:          solicitudPendiente.direccion_calle,
+        numero:         solicitudPendiente.direccion_numero,
+        numero_int:     solicitudPendiente.direccion_numero_int,
+        colonia:        solicitudPendiente.direccion_colonia,
+        cp:             solicitudPendiente.direccion_cp,
+        instrucciones:  solicitudPendiente.direccion_instrucciones,
+        texto:          solicitudPendiente.direccion_texto,
       };
       setServicioInfo(infoBase);
 
@@ -333,14 +336,29 @@ export default function InicioPaseador({ navigation }) {
           <View style={styles.infoPanelAddr}>
             <Text style={styles.infoPanelAddrIcon}>📍</Text>
             <View style={{ flex: 1 }}>
+              {servicioInfo?.nombre_ref ? (
+                <Text style={[styles.infoPanelAddrMain, { color: "#22a06b", marginBottom: 2 }]}>
+                  {servicioInfo.nombre_ref}
+                </Text>
+              ) : null}
               {servicioInfo?.calle ? (
                 <>
                   <Text style={styles.infoPanelAddrMain}>
-                    {servicioInfo.calle}{servicioInfo.numero ? ` #${servicioInfo.numero}` : ""}
+                    {servicioInfo.calle}
+                    {servicioInfo.numero ? ` #${servicioInfo.numero}` : ""}
+                    {servicioInfo.numero_int ? ` Int. ${servicioInfo.numero_int}` : ""}
                   </Text>
                   {servicioInfo.colonia ? (
-                    <Text style={styles.infoPanelAddrSub}>{servicioInfo.colonia}</Text>
+                    <Text style={styles.infoPanelAddrSub}>
+                      {servicioInfo.colonia}
+                      {servicioInfo.cp ? `, C.P. ${servicioInfo.cp}` : ""}
+                    </Text>
                   ) : null}
+                  {!servicioInfo.numero && (
+                    <Text style={[styles.infoPanelAddrSub, { color: "#e67e22", marginTop: 3 }]}>
+                      ⚠️ Número exacto no disponible — usa el mapa o contacta al cliente
+                    </Text>
+                  )}
                 </>
               ) : servicioInfo?.texto ? (
                 <Text style={styles.infoPanelAddrMain}>{servicioInfo.texto}</Text>
@@ -410,21 +428,43 @@ export default function InicioPaseador({ navigation }) {
                 🐶 {solicitudPendiente.mascota_nombre || `Mascota #${solicitudPendiente.mascota_id}`}
               </Text>
               <Text style={styles.cardMascota}>
-                🦮 {solicitudPendiente.tipo_servicio}  ·  ⏱ {solicitudPendiente.duracion_minutos} min
+                🦮 {solicitudPendiente.tipo_servicio}
+                {solicitudPendiente.subtipo ? ` — ${solicitudPendiente.subtipo}` : `  ·  ⏱ ${solicitudPendiente.duracion_minutos} min`}
               </Text>
+              {/* Dirección */}
+              {(solicitudPendiente.direccion_calle || solicitudPendiente.direccion_texto) ? (
+                <Text style={styles.cardDir} numberOfLines={2}>
+                  📍{" "}
+                  {solicitudPendiente.direccion_nombre_ref
+                    ? `${solicitudPendiente.direccion_nombre_ref} · ` : ""}
+                  {solicitudPendiente.direccion_calle
+                    ? `${solicitudPendiente.direccion_calle}${solicitudPendiente.direccion_numero ? ` #${solicitudPendiente.direccion_numero}` : ""}${solicitudPendiente.direccion_colonia ? `, ${solicitudPendiente.direccion_colonia}` : ""}`
+                    : solicitudPendiente.direccion_texto}
+                </Text>
+              ) : null}
             </View>
 
-            {/* Lado derecho: nota + botones */}
+            {/* Lado derecho: precio + nota + botones */}
             <View style={styles.cardRight}>
-              <Text style={styles.cardNota} numberOfLines={1}>
-                Nota : {solicitudPendiente.notas || "Sin notas"}
-              </Text>
+              <View style={styles.cardCostoBox}>
+                <Text style={styles.cardCostoTotal}>
+                  ${parseFloat(solicitudPendiente.costo_estimado || 0).toFixed(0)} MXN
+                </Text>
+                <Text style={styles.cardCostoGana}>
+                  Ganas ${(parseFloat(solicitudPendiente.costo_estimado || 0) * 0.85).toFixed(0)}
+                </Text>
+              </View>
+              {solicitudPendiente.notas ? (
+                <Text style={styles.cardNota} numberOfLines={1}>
+                  📝 {solicitudPendiente.notas}
+                </Text>
+              ) : null}
               <View style={styles.cardBtns}>
                 <TouchableOpacity style={styles.btnMatch} onPress={aceptarServicio}>
                   <Text style={styles.btnMatchText}>🐾 MATCH</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.btnX} onPress={rechazarServicio}>
-                  <Text style={styles.btnXText}>✕</Text>
+                  <Text style={styles.btnXText}>✕ CANCELAR</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -594,9 +634,13 @@ const styles = StyleSheet.create({
   cardLeft: { flex: 1, gap: vs(4) },
   cardUser: { fontSize: ms(14), fontWeight: "700", color: "#222" },
   cardMascota: { fontSize: ms(12), color: "#555" },
+  cardDir: { fontSize: ms(11), color: "#22a06b", fontWeight: "600", marginTop: vs(2) },
   cardRight: { alignItems: "flex-end", gap: vs(6) },
   cardNota: { fontSize: ms(12), color: "#555", maxWidth: s(160) },
-  cardBtns: { flexDirection: "row", gap: s(8), alignItems: "center" },
+  cardCostoBox:   { alignItems: "flex-end", backgroundColor: "#EDF9F4", borderRadius: s(8), paddingHorizontal: s(10), paddingVertical: vs(5) },
+  cardCostoTotal: { fontSize: ms(16), fontWeight: "900", color: "#22a06b" },
+  cardCostoGana:  { fontSize: ms(10), color: "#555", marginTop: vs(1) },
+  cardBtns: { flexDirection: "column", gap: vs(6), alignItems: "stretch" },
   btnMatch: {
     backgroundColor: "#7CEDA3",
     borderRadius: s(20),
@@ -604,17 +648,18 @@ const styles = StyleSheet.create({
     paddingVertical: vs(7),
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
   },
   btnMatchText: { color: "#fff", fontWeight: "bold", fontSize: ms(13) },
   btnX: {
-    width: s(32),
-    height: s(32),
-    borderRadius: s(16),
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "#FFADAD",
+    borderRadius: s(20),
+    paddingHorizontal: s(14),
+    paddingVertical: vs(7),
     alignItems: "center",
     justifyContent: "center",
   },
-  btnXText: { fontSize: ms(14), color: "#999", fontWeight: "bold" },
+  btnXText: { fontSize: ms(13), color: "#9B1C1C", fontWeight: "bold" },
 
   // Bottom tab
   bottomTab: {

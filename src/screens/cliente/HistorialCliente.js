@@ -178,6 +178,23 @@ export default function HistorialCliente({ navigation }) {
                   </TouchableOpacity>
                 ) : null}
 
+                {s.estado === "completado" && (
+                  <TouchableOpacity
+                    style={styles.reciboBtn}
+                    onPress={() => navigation.navigate("ReciboServicio", {
+                      servicioId:    s.servicio_id,
+                      monto:         parseFloat(s.costo_total || s.costo_estimado || 0),
+                      metodoPago:    s.metodo_pago || "Efectivo",
+                      tipoServicio:  s.tipo_servicio,
+                      mascotaNombre: s.mascota_nombre,
+                      paseadorNombre:s.paseador_nombre,
+                      duracion:      s.duracion_minutos,
+                    })}
+                  >
+                    <Text style={styles.reciboBtnText}>🧾 Ver recibo</Text>
+                  </TouchableOpacity>
+                )}
+
                 {["creado", "en_camino", "activo"].includes(s.estado) && (
                   <TouchableOpacity
                     style={styles.seguimientoBtn}
@@ -316,6 +333,9 @@ const styles = StyleSheet.create({
 
   seguimientoBtn:    { backgroundColor: "#E3F2FD", borderRadius: s(10), padding: s(8), alignItems: "center", marginTop: vs(8) },
   seguimientoBtnText:{ color: "#1565C0", fontWeight: "bold", fontSize: ms(12) },
+
+  reciboBtn:     { backgroundColor: "#EDF9F4", borderRadius: s(10), padding: s(8), alignItems: "center", marginTop: vs(6), borderWidth: 1, borderColor: "#99D9C1" },
+  reciboBtnText: { color: "#22a06b", fontWeight: "bold", fontSize: ms(12) },
 
   // Modal
   modalOverlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center", zIndex: 100, padding: s(20) },

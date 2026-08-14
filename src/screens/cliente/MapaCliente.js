@@ -847,6 +847,57 @@ export default function MapaCliente({ route, navigation }) {
         <View style={finStyles.overlay}>
           <Text style={finStyles.title}>✅ ¡Paseo completado!</Text>
 
+          {/* BOTÓN DE PAGO */}
+          {servicioData?.metodo_pago === "Efectivo" ? (
+            <TouchableOpacity
+              style={[finStyles.btn, { backgroundColor: "#5A8A5A", alignSelf: "stretch", marginBottom: 14 }]}
+              onPress={async () => {
+                try {
+                  const montoEfec = servicioData?.costo_total || 70;
+                  const d = await apiFetch("/pago/registrar", {
+                    method: "POST",
+                    body: JSON.stringify({
+                      servicio_id: servicioId,
+                      metodo: "Efectivo",
+                      monto: montoEfec,
+                    }),
+                  });
+                  navigation.navigate("ReciboServicio", {
+                    servicioId,
+                    monto:         montoEfec,
+                    metodoPago:    "Efectivo",
+                    referencia:    d.referencia,
+                    tipoServicio:  "Paseo",
+                    mascotaNombre: mascotaNombre || "",
+                    paseadorNombre: paseadorInfo?.nombre_completo || "",
+                    duracion:      30,
+                  });
+                } catch {
+                  showToast("Error al registrar el pago", "error");
+                }
+              }}
+            >
+              <Text style={finStyles.btnTxt}>💵 Confirmar pago en efectivo</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[finStyles.btn, { backgroundColor: "#99D9C1", alignSelf: "stretch", marginBottom: 14 }]}
+              onPress={() =>
+                navigation.navigate("PagoServicio", {
+                  servicioId,
+                  monto:          servicioData?.costo_total || 70,
+                  tipoServicio:   "Paseo",
+                  mascotaNombre:  mascotaNombre || "",
+                  paseadorNombre: paseadorInfo?.nombre_completo || "",
+                  duracion:       30,
+                  metodoPrevio:   servicioData?.metodo_pago || "Tarjeta",
+                })
+              }
+            >
+              <Text style={finStyles.btnTxt}>💳 Realizar pago</Text>
+            </TouchableOpacity>
+          )}
+
           {!calificado ? (
             <>
               <Text style={finStyles.ratingLabel}>Califica al paseador</Text>

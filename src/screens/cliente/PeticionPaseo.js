@@ -16,7 +16,8 @@ export default function PeticionPaseo({ navigation }) {
   const [mascotas, setMascotas] = useState([]);
   const [mascotaSeleccionada, setMascotaSeleccionada] = useState(null);
   const [tipoServicio, setTipoServicio] = useState("Paseo");
-  const [duracion, setDuracion] = useState("30");
+  const [duracion, setDuracion]         = useState("30");
+  const [subtipo, setSubtipo]           = useState(null); // para Guardería / Estética / Veterinaria
   const [notas, setNotas] = useState("");
   const [metodoPago, setMetodoPago] = useState("Efectivo");
   const [loading, setLoading] = useState(false);
@@ -38,23 +39,43 @@ export default function PeticionPaseo({ navigation }) {
   const { showToast, ToastComponent } = useToast();
 
   const tiposServicio = ["Paseo", "Guardería", "Veterinaria", "Estética"];
-  const duraciones = ["15", "30", "45", "60", "90"];
-  const metodosPago = ["Efectivo", "Tarjeta", "Transferencia"];
+  const duraciones    = ["15", "30", "45", "60", "90"];
+  const metodosPago   = ["Tarjeta", "Mercado Pago", "PayPal", "Efectivo"];
+
+  const COMISION_RATE = 0.15;
+
+  // Opciones y precios por subtipo de servicio
+  const SUBTIPO_CONFIG = {
+    Guardería: [
+      { label: "1 día",   emoji: "🌙", duracion: 1,  precio: 150, desc: "Un día de cuidado" },
+      { label: "3 días",  emoji: "🗓️", duracion: 3,  precio: 350, desc: "Tres días continuos" },
+      { label: "5 días",  emoji: "📆", duracion: 5,  precio: 550, desc: "Semana completa" },
+    ],
+    Veterinaria: [
+      { label: "Consulta a domicilio", emoji: "🩺", duracion: 60, precio: 450, desc: "El veterinario va a tu casa" },
+    ],
+    Estética: [
+      { label: "Baño",              emoji: "🛁", duracion: 60, precio: 150, desc: "Baño completo con secado" },
+      { label: "Corte",             emoji: "✂️", duracion: 90, precio: 200, desc: "Corte de pelo a tu gusto" },
+      { label: "Limpieza de oídos", emoji: "👂", duracion: 30, precio: 80,  desc: "Limpieza profunda de oídos" },
+      { label: "Corte de uñas",     emoji: "💅", duracion: 30, precio: 70,  desc: "Corte y limado de uñas" },
+    ],
+  };
+
+  const getSubtipoActual = () => {
+    if (!SUBTIPO_CONFIG[tipoServicio]) return null;
+    const lista = SUBTIPO_CONFIG[tipoServicio];
+    return lista.find(o => o.label === subtipo) || lista[0];
+  };
 
   const calcularCosto = (tipo, dur) => {
-    const d = parseInt(dur) || 30;
-    if (tipo === "Paseo") {
-      if (d <= 15) return 50;
-      if (d <= 30) return 80;
-      if (d <= 45) return 120;
-      if (d <= 60) return 150;
-      return 220;
-    }
-    if (tipo === "Guardería")  return 200;
-    if (tipo === "Veterinaria") return 350;
-    if (tipo === "Estética")   return 280;
-    return 80;
+    const cfg = getSubtipoActual();
+    if (cfg) return cfg.precio;
+    const bloques = Math.max(1, Math.ceil((parseInt(dur) || 30) / 30));
+    return bloques * 70;
   };
+
+  const calcularComision = (costo) => Math.round(costo * COMISION_RATE * 100) / 100;
 
   // ─── Mini mapa Leaflet (web) ────────────────────────────────────────────────
   const miniMapHtml = useMemo(() => `<!DOCTYPE html>
@@ -215,13 +236,18 @@ export default function PeticionPaseo({ navigation }) {
             .filter(Boolean).join(" ")
         : null;
 
+      const subCfg      = getSubtipoActual();
+      const durEnviar   = subCfg ? subCfg.duracion : parseInt(duracion);
+      const subtipoEnviar = subCfg ? subCfg.label : null;
+
       const servicio = await apiFetch("/servicio", {
         method: "POST",
         body: JSON.stringify({
           dueno_id:         usuario.usuario_id,
           mascota_id:       mascotaSeleccionada.mascota_id,
           tipo_servicio:    tipoServicio,
-          duracion_minutos: parseInt(duracion),
+          subtipo:          subtipoEnviar,
+          duracion_minutos: durEnviar,
           notas_dueno:      notas,
           metodo_pago:      metodoPago,
           lat:              pickupLat,
@@ -307,19 +333,54 @@ export default function PeticionPaseo({ navigation }) {
             ))}
           </View>
 
-          {/* DURACIÓN */}
-          <Text style={styles.sectionLabel}>Duración (minutos)</Text>
-          <View style={styles.optionRow}>
-            {duraciones.map((d) => (
-              <TouchableOpacity
-                key={d}
-                style={[styles.duracionChip, duracion === d && styles.chipSelected]}
-                onPress={() => setDuracion(d)}
-              >
-                <Text style={[styles.chipText, duracion === d && styles.chipTextSelected]}>{d} min</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          {/* SELECTOR DINÁMICO: duración para Paseo, sub-opciones para los demás */}
+          {tipoServicio === "Paseo" ? (
+            <>
+              <Text style={styles.sectionLabel}>Duración del paseo</Text>
+              <View style={styles.optionRow}>
+                {duraciones.map((d) => (
+                  <TouchableOpacity
+                    key={d}
+                    style={[styles.duracionChip, duracion === d && styles.chipSelected]}
+                    onPress={() => setDuracion(d)}
+                  >
+                    <Text style={[styles.chipText, duracion === d && styles.chipTextSelected]}>
+                      {d} min
+                    </Text>
+                    <Text style={[styles.chipPrecio, duracion === d && { color: "#22a06b" }]}>
+                      ${Math.max(1, Math.ceil(parseInt(d) / 30)) * 70}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          ) : SUBTIPO_CONFIG[tipoServicio] ? (
+            <>
+              <Text style={styles.sectionLabel}>
+                {tipoServicio === "Guardería"   ? "Tiempo de cuidado"
+                : tipoServicio === "Veterinaria" ? "Tipo de consulta"
+                : "¿Qué servicio necesita?"}
+              </Text>
+              <View style={styles.subtipoGrid}>
+                {SUBTIPO_CONFIG[tipoServicio].map((opt) => {
+                  const sel = (subtipo || SUBTIPO_CONFIG[tipoServicio][0].label) === opt.label;
+                  return (
+                    <TouchableOpacity
+                      key={opt.label}
+                      style={[styles.subtipoCard, sel && styles.subtipoCardSel]}
+                      onPress={() => setSubtipo(opt.label)}
+                      activeOpacity={0.75}
+                    >
+                      <Text style={styles.subtipoEmoji}>{opt.emoji}</Text>
+                      <Text style={[styles.subtipoLabel, sel && { color: "#22a06b" }]}>{opt.label}</Text>
+                      <Text style={[styles.subtipoPrecio, sel && { color: "#22a06b" }]}>${opt.precio} MXN</Text>
+                      <Text style={styles.subtipoDesc}>{opt.desc}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </>
+          ) : null}
 
           {/* MÉTODO DE PAGO */}
           <Text style={styles.sectionLabel}>Método de pago</Text>
@@ -331,17 +392,36 @@ export default function PeticionPaseo({ navigation }) {
                 onPress={() => setMetodoPago(m)}
               >
                 <Text style={[styles.chipText, metodoPago === m && styles.chipTextSelected]}>
-                  {m === "Efectivo" ? "💵 " : m === "Tarjeta" ? "💳 " : "📲 "}{m}
+                  {m === "Efectivo" ? "💵 " : m === "Tarjeta" ? "💳 " : m === "Mercado Pago" ? "💙 " : "🅿️ "}{m}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
 
           {/* COSTO ESTIMADO */}
-          <View style={styles.costoCard}>
-            <Text style={styles.costoLabel}>Costo estimado</Text>
-            <Text style={styles.costoValor}>${calcularCosto(tipoServicio, duracion)} MXN</Text>
-          </View>
+          {(() => {
+            const costo    = calcularCosto(tipoServicio, duracion);
+            const comision = calcularComision(costo);
+            const etiqueta = getSubtipoActual()
+              ? `${tipoServicio} — ${getSubtipoActual().label}`
+              : `Paseo ${duracion} min`;
+            return (
+              <View style={styles.costoCard}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+                  <Text style={styles.costoLabel}>{etiqueta}</Text>
+                  <Text style={styles.costoValor}>${costo} MXN</Text>
+                </View>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+                  <Text style={[styles.costoLabel, { fontSize: 12, color: "#888" }]}>Comisión plataforma (15%)</Text>
+                  <Text style={[styles.costoValor, { fontSize: 12, color: "#888" }]}>${comision} MXN</Text>
+                </View>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", borderTopWidth: 1, borderTopColor: "#ddd", paddingTop: 6, marginTop: 2 }}>
+                  <Text style={[styles.costoLabel, { fontWeight: "700" }]}>Total a pagar</Text>
+                  <Text style={[styles.costoValor, { color: "#22a06b", fontWeight: "800" }]}>${costo} MXN</Text>
+                </View>
+              </View>
+            );
+          })()}
 
           {/* NOTAS */}
           <Text style={styles.sectionLabel}>Notas para el paseador</Text>
@@ -422,7 +502,14 @@ export default function PeticionPaseo({ navigation }) {
               <Text style={styles.resumenTitle}>Resumen</Text>
               <Text style={styles.resumenItem}>🐶 Mascota: <Text style={styles.resumenVal}>{mascotaSeleccionada.nombre}</Text></Text>
               <Text style={styles.resumenItem}>🦮 Servicio: <Text style={styles.resumenVal}>{tipoServicio}</Text></Text>
-              <Text style={styles.resumenItem}>⏱ Duración: <Text style={styles.resumenVal}>{duracion} min</Text></Text>
+              {getSubtipoActual() ? (
+                <Text style={styles.resumenItem}>
+                  {getSubtipoActual().emoji} Opción:{" "}
+                  <Text style={styles.resumenVal}>{getSubtipoActual().label}</Text>
+                </Text>
+              ) : (
+                <Text style={styles.resumenItem}>⏱ Duración: <Text style={styles.resumenVal}>{duracion} min</Text></Text>
+              )}
               <Text style={styles.resumenItem}>
                 📍 Recogida:{" "}
                 <Text style={[styles.resumenVal, { color: dirSeleccionada ? "#22a06b" : locationColor() }]}>
@@ -432,10 +519,10 @@ export default function PeticionPaseo({ navigation }) {
                 </Text>
               </Text>
               <Text style={styles.resumenItem}>
-                💳 Pago: <Text style={styles.resumenVal}>{metodoPago}</Text>
+                {metodoPago === "Efectivo" ? "💵" : metodoPago === "Tarjeta" ? "💳" : metodoPago === "Mercado Pago" ? "💙" : "🅿️"} Pago: <Text style={styles.resumenVal}>{metodoPago}</Text>
               </Text>
               <Text style={styles.resumenItem}>
-                💰 Costo: <Text style={[styles.resumenVal, { color: "#22a06b" }]}>${calcularCosto(tipoServicio, duracion)} MXN</Text>
+                💰 Total: <Text style={[styles.resumenVal, { color: "#22a06b" }]}>${calcularCosto(tipoServicio, duracion)} MXN</Text>
               </Text>
             </View>
           )}
@@ -513,9 +600,23 @@ const styles = StyleSheet.create({
   btnDisabled:  { backgroundColor: "#ccc" },
   btnText:      { fontSize: ms(17), fontWeight: "bold", color: "#000" },
 
-  costoCard: { backgroundColor: "#fff", borderRadius: s(8), padding: s(14), marginTop: vs(8), flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  costoCard:  { backgroundColor: "#fff", borderRadius: s(8), padding: s(14), marginTop: vs(8) },
   costoLabel: { fontSize: ms(13), fontWeight: "600", color: "#555" },
-  costoValor: { fontSize: ms(18), fontWeight: "bold", color: "#22a06b" },
+  costoValor: { fontSize: ms(16), fontWeight: "bold", color: "#22a06b" },
+
+  chipPrecio: { fontSize: ms(10), color: "#888", textAlign: "center", marginTop: vs(2) },
+
+  subtipoGrid:    { flexDirection: "row", flexWrap: "wrap", gap: s(8), marginBottom: vs(4) },
+  subtipoCard:    {
+    backgroundColor: "#fff", borderRadius: s(14), padding: s(12),
+    borderWidth: 2, borderColor: "#ddd",
+    minWidth: s(130), flex: 1, alignItems: "center",
+  },
+  subtipoCardSel: { borderColor: "#22a06b", backgroundColor: "#EDF9F4" },
+  subtipoEmoji:   { fontSize: ms(24), marginBottom: vs(4) },
+  subtipoLabel:   { fontSize: ms(13), fontWeight: "700", color: "#333", textAlign: "center" },
+  subtipoPrecio:  { fontSize: ms(15), fontWeight: "900", color: "#555", marginTop: vs(3) },
+  subtipoDesc:    { fontSize: ms(10), color: "#999", textAlign: "center", marginTop: vs(2) },
 
   addrChip: {
     backgroundColor: "#fff",

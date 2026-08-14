@@ -50,6 +50,8 @@ import NotificacionDetalle from "./src/screens/user/NotificacionDetalle";
 import BilleteraUsuario from "./src/screens/user/BilleteraUsuario";
 import AyudaUsuario from "./src/screens/user/AyudaUsuario";
 import HistorialCliente from "./src/screens/cliente/HistorialCliente";
+import PagoServicio from "./src/screens/cliente/PagoServicio";
+import ReciboServicio from "./src/screens/cliente/ReciboServicio";
 
 const Stack = createStackNavigator();
 
@@ -151,6 +153,8 @@ export default function App() {
         <Stack.Screen name="BilleteraUsuario" component={BilleteraUsuario} />
         <Stack.Screen name="AyudaUsuario" component={AyudaUsuario} />
         <Stack.Screen name="HistorialCliente" component={HistorialCliente} />
+        <Stack.Screen name="PagoServicio"    component={PagoServicio} />
+        <Stack.Screen name="ReciboServicio"  component={ReciboServicio} />
       </Stack.Navigator>
     </NavigationContainer>
   );
