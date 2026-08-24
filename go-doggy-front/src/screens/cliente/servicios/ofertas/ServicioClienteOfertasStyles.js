@@ -50,6 +50,7 @@ export const styles = StyleSheet.create({
   ofertaInfo: { flex: 1, justifyContent: "center" },
   ofertaName: { fontSize: ms(17), fontWeight: "bold", color: "#333", marginBottom: vs(6) },
   ofertaType: { fontSize: ms(13), color: "#666", fontWeight: "600" },
+  ofertaDescription: { fontSize: ms(11), color: "#777", marginTop: vs(2), lineHeight: vs(15) },
   precio: { fontSize: ms(17), fontWeight: "bold", color: "#28a745", marginLeft: s(10) },
   bottomTab: {
     flexDirection: "row",

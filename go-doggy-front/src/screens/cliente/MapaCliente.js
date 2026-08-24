@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Platform,
   Alert,
+  Modal,
 } from "react-native";
 import { styles } from "./MapaClienteStyles";
 import { getSocket } from "../../utils/socket";
@@ -48,6 +49,7 @@ const ESTADO_LABEL = {
 };
 
 const DIRECCION_SELECCIONADA_KEY = "direccion_mapa_seleccionada";
+const ESPERA_ENTREGA_KEY = "espera_entrega_inicial";
 
 const UBER_MAP_STYLE = [
   { elementType: "geometry", stylers: [{ color: "#f5f7fb" }] },
@@ -97,6 +99,7 @@ const readSelectedDireccion = () => {
 
 export default function MapaCliente({ route, navigation }) {
   const { servicioId } = route?.params || {};
+  const mostrarEntregaFinal = route?.params?.mostrarEntregaFinal;
   const refreshDirecciones = route?.params?.refreshDirecciones;
 
   const [hoveredTab, setHoveredTab]   = useState(null);
@@ -129,6 +132,25 @@ export default function MapaCliente({ route, navigation }) {
   const [errorDirecciones, setErrorDirecciones] = useState(null);
   const [estado, setEstado]     = useState("esperando");
   const [error, setError]       = useState(null);
+  const [showPaseadorCancelado, setShowPaseadorCancelado] = useState(false);
+  const [mensajeCancelacion, setMensajeCancelacion] = useState("El viaje fue cancelado.");
+  const [prorrogaEntregaExpiraEn, setProrrogaEntregaExpiraEn] = useState(null);
+  const [prorrogaAhora, setProrrogaAhora] = useState(Date.now());
+  const [showEntregaModal, setShowEntregaModal] = useState(false);
+  const [faseEntrega, setFaseEntrega] = useState("recogida");
+  const [pasoEntregaInicial, setPasoEntregaInicial] = useState("llegada");
+  const [respuestaEntregaExpiraEn, setRespuestaEntregaExpiraEn] = useState(null);
+  const [respuestaEntregaAhora, setRespuestaEntregaAhora] = useState(Date.now());
+  const [esperaEntregaExpiraEn, setEsperaEntregaExpiraEn] = useState(() => {
+    const valor = Number(storage.getItem(ESPERA_ENTREGA_KEY));
+    return Number.isFinite(valor) && valor > Date.now() ? valor : null;
+  });
+  const [esperaEntregaAhora, setEsperaEntregaAhora] = useState(Date.now());
+  const [isMapInteracting, setIsMapInteracting] = useState(false);
+  const [paseadorInfo, setPaseadorInfo] = useState(null);
+  const [calificacionPromedio, setCalificacionPromedio] = useState(null);
+  const [pinMovido, setPinMovido] = useState(false);
+  const [pinLocationMovida, setPinLocationMovida] = useState(null);
 
   const watchIdRef  = useRef(null);
   const iframeRef   = useRef(null);
@@ -137,19 +159,84 @@ export default function MapaCliente({ route, navigation }) {
   const rutaRef     = useRef([]);
   const finalRedirectTimeoutRef = useRef(null);
   const finalRedirectScheduledRef = useRef(false);
+  const entregaInicialPendienteRef = useRef(false);
   const direccionSeleccionadaIdRef = useRef(direccionSeleccionadaInicial?.direccion_id || null);
   const direccionSeleccionadaActivaRef = useRef(Boolean(direccionSeleccionadaInicial));
   const isWeb       = Platform.OS === "web";
   const socket      = getSocket();
 
+  useEffect(() => {
+    if (!showPaseadorCancelado) return;
+    const timeoutId = setTimeout(() => {
+      setShowPaseadorCancelado(false);
+      navigation.reset({ index: 0, routes: [{ name: "Inicio_cliente" }] });
+    }, 10000);
+    return () => clearTimeout(timeoutId);
+  }, [showPaseadorCancelado, navigation]);
+
   const scheduleFinalRedirect = useCallback(() => {
+    const activeRole = storage.getItem("active_role");
+    const usuarioGuardado = storage.getItem("usuario");
+
+    if (activeRole !== "cliente" || !usuarioGuardado) {
+      finalRedirectScheduledRef.current = false;
+      if (finalRedirectTimeoutRef.current) {
+        clearTimeout(finalRedirectTimeoutRef.current);
+        finalRedirectTimeoutRef.current = null;
+      }
+      return;
+    }
+
+    try {
+      const usuarioActual = JSON.parse(usuarioGuardado);
+      const usuarioActualId = Number(usuarioActual?.usuario_id || 0);
+      const usuarioMapaId = Number(usuarioId || 0);
+
+      if (usuarioMapaId > 0 && usuarioActualId > 0 && usuarioMapaId !== usuarioActualId) {
+        finalRedirectScheduledRef.current = false;
+        if (finalRedirectTimeoutRef.current) {
+          clearTimeout(finalRedirectTimeoutRef.current);
+          finalRedirectTimeoutRef.current = null;
+        }
+        return;
+      }
+    } catch (error) {
+      finalRedirectScheduledRef.current = false;
+      if (finalRedirectTimeoutRef.current) {
+        clearTimeout(finalRedirectTimeoutRef.current);
+        finalRedirectTimeoutRef.current = null;
+      }
+      return;
+    }
+
     if (finalRedirectScheduledRef.current) return;
     finalRedirectScheduledRef.current = true;
 
     finalRedirectTimeoutRef.current = setTimeout(() => {
-      navigation.navigate("Inicio_cliente");
+      const activeRoleNow = storage.getItem("active_role");
+      const usuarioNow = storage.getItem("usuario");
+      if (activeRoleNow !== "cliente" || !usuarioNow) {
+        return;
+      }
+
+      try {
+        const usuarioActual = JSON.parse(usuarioNow);
+        const usuarioActualId = Number(usuarioActual?.usuario_id || 0);
+        const usuarioMapaId = Number(usuarioId || 0);
+
+        if (usuarioMapaId > 0 && usuarioActualId > 0 && usuarioMapaId !== usuarioActualId) {
+          return;
+        }
+      } catch (error) {
+        return;
+      }
+
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Inicio_cliente" }],
+      });
     }, 5000);
-  }, [navigation]);
+  }, [navigation, usuarioId]);
 
   useEffect(() => {
     const usuarioGuardado = storage.getItem("usuario");
@@ -188,6 +275,9 @@ export default function MapaCliente({ route, navigation }) {
       if (seleccionActual) {
         try {
           const seleccionParseada = JSON.parse(seleccionActual);
+          const seleccionTemporal = String(seleccionParseada?.direccion_id || "").startsWith("temp_");
+          if (seleccionTemporal) return;
+
           const seleccionId = Number(seleccionParseada?.direccion_id);
           const direccionActiva = direcciones.find(
             (item) => Number(item.direccion_id) === seleccionId
@@ -241,6 +331,14 @@ export default function MapaCliente({ route, navigation }) {
     }, [usuarioId, refreshDirecciones])
   );
 
+  useEffect(() => {
+    if (!mostrarEntregaFinal || !servicioId) return;
+    entregaInicialPendienteRef.current = true;
+    setFaseEntrega("final");
+    setShowEntregaModal(true);
+    navigation.setParams({ mostrarEntregaFinal: false });
+  }, [mostrarEntregaFinal, servicioId, navigation]);
+
   const aplicarDireccionSeleccionada = (direccion) => {
     const coords = getDireccionCoords(direccion);
 
@@ -254,6 +352,7 @@ export default function MapaCliente({ route, navigation }) {
     direccionSeleccionadaActivaRef.current = true;
     setDireccionSeleccionadaId(direccionId);
     setDireccionSeleccionada(direccion);
+    setGpsPos(coords);
     setClientePos(coords);
     setDisplayCoords(`Lat: ${coords.latitude.toFixed(6)}\nLng: ${coords.longitude.toFixed(6)}`);
     setAddress(getDireccionLabel(direccion));
@@ -278,6 +377,29 @@ export default function MapaCliente({ route, navigation }) {
     );
 
     Alert.alert("Direccion seleccionada", "El mapa se actualizo con esa ubicacion.");
+  };
+
+  const usarUbicacionMovida = () => {
+    if (!pinLocationMovida) return;
+
+    const nuevaDireccion = {
+      direccion_id: `temp_${Date.now()}`,
+      latitud: pinLocationMovida.latitude,
+      longitud: pinLocationMovida.longitude,
+      calle: "Ubicación custom",
+      numero_calle: "",
+      colonia: "Seleccionada en el mapa",
+    };
+
+    setDireccionSeleccionadaId(nuevaDireccion.direccion_id);
+    setDireccionSeleccionada(nuevaDireccion);
+    setAddress("📍 Ubicación personalizada");
+    setError(null);
+    setPinMovido(false);
+    setPinLocationMovida(null);
+    storage.setItem(DIRECCION_SELECCIONADA_KEY, JSON.stringify(nuevaDireccion));
+
+    Alert.alert("Ubicación guardada", "La ubicación del mapa se ha guardado correctamente.");
   };
 
   // ─── HTML del mapa web (generado una sola vez) ───────────────────────────────
@@ -306,6 +428,12 @@ export default function MapaCliente({ route, navigation }) {
     map.on('dragstart', () => { userMoved = true; });
     map.on('zoomstart', () => { userMoved = true; });
     map.on('movestart', () => { userMoved = true; });
+    map.scrollWheelZoom.enable();
+    map.dragging.enable();
+    map.touchZoom.enable();
+    map.doubleClickZoom.enable();
+    map.boxZoom.enable();
+    map.keyboard.enable();
 
     // Marcador del cliente (badge moderno y arrastrable)
     const clienteIcon = L.divIcon({
@@ -338,10 +466,12 @@ export default function MapaCliente({ route, navigation }) {
       const d = ev.data;
 
       if (d.type === 'updateCliente') {
+        console.log('[MapaCliente ubicación] iframe recibió updateCliente', {
+          lat: d.lat,
+          lng: d.lng,
+        });
         clienteMarker.setLatLng([d.lat, d.lng]);
-        if (!userMoved) {
-          map.setView([d.lat, d.lng], map.getZoom(), {animate:true});
-        }
+        map.setView([d.lat, d.lng], map.getZoom(), {animate:true});
       }
 
       if (d.type === 'updatePaseador') {
@@ -363,6 +493,17 @@ export default function MapaCliente({ route, navigation }) {
             lineJoin:'round',
             dashArray:'10, 8'
           }).addTo(map);
+        }
+      }
+
+      if (d.type === 'clearPaseador') {
+        if (paseadorMarker) {
+          map.removeLayer(paseadorMarker);
+          paseadorMarker = null;
+        }
+        if (routeLine) {
+          map.removeLayer(routeLine);
+          routeLine = null;
         }
       }
     });
@@ -461,12 +602,31 @@ export default function MapaCliente({ route, navigation }) {
       if (!response.ok) return;
       const servicio = await response.json();
 
+      if (servicio?.paseador_id) {
+        setPaseadorInfo({
+          paseador_id: servicio.paseador_id,
+          nombre: servicio.paseador_nombre || "Paseador",
+          apellido: servicio.paseador_apellido || "",
+          biografia: servicio.paseador_biografia || "",
+          url_foto_perfil: servicio.paseador_url_foto_perfil || null,
+        });
+        fetch(`${API_URL}/paseador/${servicio.paseador_id}/calificaciones`)
+          .then((response) => response.ok ? response.json() : [])
+          .then((reseñas) => {
+            const filas = Array.isArray(reseñas) ? reseñas : [];
+            const promedio = filas.length
+              ? filas.reduce((total, reseña) => total + (Number(reseña.promedio) || 0), 0) / filas.length
+              : 0;
+            setCalificacionPromedio(promedio);
+          })
+          .catch(() => setCalificacionPromedio(0));
+      }
+
       if (servicio?.estado) {
         if (servicio.estado === "en_camino" || servicio.estado === "activo") {
           setEstado("en_camino");
         } else if (servicio.estado === "finalizado") {
           setEstado("finalizado");
-          scheduleFinalRedirect();
         } else {
           setEstado(servicio.estado);
         }
@@ -502,6 +662,8 @@ export default function MapaCliente({ route, navigation }) {
   useFocusEffect(
     useCallback(() => {
       if (!servicioId) return;
+      entregaInicialPendienteRef.current = false;
+      setShowEntregaModal(false);
       cargarEstadoServicio();
       socket.emit("cliente:watch", { servicioId });
 
@@ -510,11 +672,15 @@ export default function MapaCliente({ route, navigation }) {
         Alert.alert("¡Paseador en camino!", "El paseador aceptó tu solicitud y va hacia ti.");
       };
 
+      const handleServicioActivo = (payload) => {
+        if (Number(payload?.servicio_id || 0) !== Number(servicioId)) return;
+        setEstado("activo");
+      };
+
       const handlePaseadorLocation = (coord) => {
         setPaseadorPos({ latitude: coord.lat, longitude: coord.lng });
         rutaRef.current = [...rutaRef.current, [coord.lat, coord.lng]];
         setRutaPaseador([...rutaRef.current]);
-        setEstado("activo");
         iframeRef.current?.contentWindow?.postMessage({
           type:  "updatePaseador",
           lat:   coord.lat,
@@ -523,27 +689,156 @@ export default function MapaCliente({ route, navigation }) {
         }, "*");
       };
 
-      const handleServicioFinalizado = () => {
-        setEstado("finalizado");
-        scheduleFinalRedirect();
+      const handleServicioFinalizado = (payload) => {
+        const montoAdicional = Number(payload?.monto_adicional || 0);
+        const distanciaMetros = Number(payload?.distancia_metros || 0);
+        const montoBase = Number(payload?.costo_total || 0);
+        const montoTotal = Number(
+          payload?.monto_total || (montoBase + montoAdicional).toFixed(2)
+        );
+
+        navigation.reset({
+          index: 0,
+          routes: [{
+            name: "MercadoPago",
+            params: {
+              servicioId,
+              paseadorId: payload?.paseador_id,
+              tarifa_base_hora: montoTotal,
+              tipo_servicio: payload?.tipo_servicio || "Paseo",
+              duracion_minutos: payload?.duracion_minutos || null,
+              tipoCobro: "distancia",
+              distanciaMetros,
+              montoAdicional,
+              montoBase,
+            },
+          }],
+        });
+      };
+
+      const handleServicioCancelado = (payload) => {
+        if (Number(payload?.servicio_id || 0) !== Number(servicioId)) return;
+
+        rutaRef.current = [];
+        setRutaPaseador([]);
+        setPaseadorPos(null);
+        setEstado("esperando");
+        setMensajeCancelacion(payload?.mensaje_cliente || "El viaje fue cancelado.");
+        setEsperaEntregaExpiraEn(null);
+        storage.removeItem(ESPERA_ENTREGA_KEY);
+        iframeRef.current?.contentWindow?.postMessage({
+          type: "clearPaseador",
+        }, "*");
+        setShowPaseadorCancelado(true);
+      };
+
+      const handleProrrogaEntrega = (payload) => {
+        if (Number(payload?.servicio_id || 0) !== Number(servicioId)) return;
+        setProrrogaEntregaExpiraEn(Date.now() + Number(payload?.segundos_restantes || 120) * 1000);
+      };
+
+      const handleAlertaEntrega = (payload) => {
+        if (Number(payload?.servicio_id || 0) !== Number(servicioId)) return;
+        setProrrogaEntregaExpiraEn(null);
+        setMensajeCancelacion(payload?.mensaje_cliente || "El paseador ha sido alertado, tiene 1 hora para la entrega de tus mascotas.");
+        setShowPaseadorCancelado(true);
+      };
+
+      const handlePaseadorPorLlegar = (payload) => {
+        if (Number(payload?.servicio_id || 0) !== Number(servicioId)) return;
+        Alert.alert("Paseador por llegar", "El paseador está por llegar.");
+      };
+
+      const handleSolicitudEntrega = (payload) => {
+        if (
+          Number(payload?.servicio_id || 0) !== Number(servicioId) ||
+          entregaInicialPendienteRef.current
+        ) return;
+
+        entregaInicialPendienteRef.current = true;
+        setFaseEntrega(payload?.fase === "final" ? "final" : "recogida");
+        if (payload?.fase !== "final") {
+          setPasoEntregaInicial("llegada");
+          setRespuestaEntregaExpiraEn(Date.now() + 10 * 1000);
+          const segundosRestantes = Number(payload?.segundos_restantes);
+          if (Number.isFinite(segundosRestantes)) {
+            const expiraEn = Date.now() + segundosRestantes * 1000;
+            setEsperaEntregaExpiraEn(expiraEn);
+            storage.setItem(ESPERA_ENTREGA_KEY, String(expiraEn));
+          }
+        }
+        setShowEntregaModal(true);
       };
 
       socket.on("servicio:aceptado", handleServicioAceptado);
+      socket.on("cliente:servicio:activo", handleServicioActivo);
       socket.on("paseador:location", handlePaseadorLocation);
       socket.on("servicio:finalizado", handleServicioFinalizado);
+      socket.on("cliente:paseador:por-llegar", handlePaseadorPorLlegar);
+      socket.on("cliente:entrega:solicitud", handleSolicitudEntrega);
+      socket.on("servicio:cancelado", handleServicioCancelado);
+      socket.on("cliente:entrega:prorroga", handleProrrogaEntrega);
+      socket.on("cliente:entrega:alerta", handleAlertaEntrega);
 
       return () => {
         socket.off("servicio:aceptado", handleServicioAceptado);
+        socket.off("cliente:servicio:activo", handleServicioActivo);
         socket.off("paseador:location", handlePaseadorLocation);
         socket.off("servicio:finalizado", handleServicioFinalizado);
+        socket.off("cliente:paseador:por-llegar", handlePaseadorPorLlegar);
+        socket.off("cliente:entrega:solicitud", handleSolicitudEntrega);
+        socket.off("servicio:cancelado", handleServicioCancelado);
+        socket.off("cliente:entrega:prorroga", handleProrrogaEntrega);
+        socket.off("cliente:entrega:alerta", handleAlertaEntrega);
       };
     }, [servicioId, socket, navigation, cargarEstadoServicio])
   );
 
   useEffect(() => {
+    if (!prorrogaEntregaExpiraEn) return;
+    const intervalId = setInterval(() => setProrrogaAhora(Date.now()), 1000);
+    return () => clearInterval(intervalId);
+  }, [prorrogaEntregaExpiraEn]);
+
+    useEffect(() => {
+      if (!respuestaEntregaExpiraEn || faseEntrega !== "recogida") return;
+
+      const actualizarRespuesta = () => {
+        const ahora = Date.now();
+        setRespuestaEntregaAhora(ahora);
+        if (ahora < respuestaEntregaExpiraEn) return;
+
+        entregaInicialPendienteRef.current = false;
+        setShowEntregaModal(false);
+        setRespuestaEntregaExpiraEn(null);
+        socket.emit("cliente:mascotas:no-entregadas", { servicioId });
+      };
+
+      actualizarRespuesta();
+      const intervalId = setInterval(actualizarRespuesta, 1000);
+      return () => clearInterval(intervalId);
+    }, [respuestaEntregaExpiraEn, faseEntrega, servicioId, socket]);
+
+  useEffect(() => {
+    if (!esperaEntregaExpiraEn) return;
+    const actualizarEspera = () => {
+      const ahora = Date.now();
+      setEsperaEntregaAhora(ahora);
+      if (ahora >= esperaEntregaExpiraEn) {
+        setEsperaEntregaExpiraEn(null);
+        storage.removeItem(ESPERA_ENTREGA_KEY);
+      }
+    };
+    actualizarEspera();
+    const intervalId = setInterval(actualizarEspera, 1000);
+    return () => clearInterval(intervalId);
+  }, [esperaEntregaExpiraEn]);
+
+  useEffect(() => {
     return () => {
       if (finalRedirectTimeoutRef.current) {
         clearTimeout(finalRedirectTimeoutRef.current);
+        finalRedirectTimeoutRef.current = null;
       }
       finalRedirectScheduledRef.current = false;
     };
@@ -590,6 +885,8 @@ export default function MapaCliente({ route, navigation }) {
       lastLocRef.current = pos;
       setClientePos(pos);
       setDisplayCoords(`Lat: ${latitude.toFixed(6)}\nLng: ${longitude.toFixed(6)}`);
+      setPinMovido(true);
+      setPinLocationMovida(pos);
     };
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
@@ -621,7 +918,25 @@ export default function MapaCliente({ route, navigation }) {
     navigation.navigate("verDireccionClienteDetalles", { direccion });
   };
 
+  const verDetallesPaseador = () => {
+    if (!paseadorInfo) return;
+    navigation.navigate("verDetallesPaseadorEnMapa", { paseador: paseadorInfo });
+  };
+
+  const volverAInicio = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+
+    navigation.navigate("Inicio_cliente");
+  };
+
   const sendInitialPosition = () => {
+    console.log("[MapaCliente ubicación] iframe cargado", {
+      clientePos,
+      tieneIframe: Boolean(iframeRef.current?.contentWindow),
+    });
     if (clientePos) {
       iframeRef.current?.contentWindow?.postMessage(
         { type: "updateCliente", lat: clientePos.latitude, lng: clientePos.longitude }, "*"
@@ -634,6 +949,144 @@ export default function MapaCliente({ route, navigation }) {
         lng:   paseadorPos.longitude,
         route: rutaRef.current,
       }, "*");
+    }
+  };
+
+  const irAMiUbicacion = async () => {
+    console.log("[MapaCliente ubicación] Botón presionado", {
+      plataforma: Platform.OS,
+      isWeb,
+      tieneGeolocalizacion: Boolean(typeof navigator !== "undefined" && navigator.geolocation),
+      tieneMapaNativo: Boolean(mapRef.current),
+    });
+    try {
+      if (isWeb) {
+        if (!navigator.geolocation) {
+          console.warn("[MapaCliente ubicación] navigator.geolocation no disponible");
+          Alert.alert("Error", "Geolocalización no disponible en tu navegador.");
+          return;
+        }
+
+        console.log("[MapaCliente ubicación] Solicitando GPS web", {
+          secureContext: window.isSecureContext,
+          origin: window.location.origin,
+        });
+        if (navigator.permissions?.query) {
+          navigator.permissions.query({ name: "geolocation" })
+            .then((permission) => console.log("[MapaCliente ubicación] Permiso GPS web", permission.state))
+            .catch((error) => console.warn("[MapaCliente ubicación] No se pudo consultar permiso GPS", error));
+        }
+
+        let gpsRespondio = false;
+        const gpsWatchdog = setTimeout(() => {
+          if (!gpsRespondio) {
+            console.error("[MapaCliente ubicación] GPS web no respondió en 12 segundos");
+            Alert.alert(
+              "Ubicación no disponible",
+              "El navegador no respondió. Verifica el permiso de ubicación para este sitio e inténtalo nuevamente."
+            );
+          }
+        }, 32000);
+
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            gpsRespondio = true;
+            clearTimeout(gpsWatchdog);
+            const { latitude, longitude } = position.coords;
+            console.log("[MapaCliente ubicación] GPS web recibido", {
+              latitude,
+              longitude,
+              accuracy: position.coords.accuracy,
+            });
+            const nuevoPos = { latitude, longitude };
+            const direccionTemporal = {
+              direccion_id: `temp_${Date.now()}`,
+              latitud: latitude,
+              longitud: longitude,
+              calle: "Ubicación actual",
+              numero_calle: "",
+              colonia: "Seleccionada en el mapa",
+            };
+            direccionSeleccionadaIdRef.current = null;
+            direccionSeleccionadaActivaRef.current = false;
+            setDireccionSeleccionadaId(null);
+            setDireccionSeleccionada(direccionTemporal);
+            storage.setItem(DIRECCION_SELECCIONADA_KEY, JSON.stringify(direccionTemporal));
+            setGpsPos(nuevoPos);
+            setClientePos(nuevoPos);
+            setAddress(null);
+            setDisplayCoords(`Lat: ${latitude.toFixed(6)}\nLng: ${longitude.toFixed(6)}`);
+            setPinMovido(true);
+            setPinLocationMovida(nuevoPos);
+            iframeRef.current?.contentWindow?.postMessage(
+              { type: "updateCliente", lat: latitude, lng: longitude },
+              "*"
+            );
+            console.log("[MapaCliente ubicación] Estado y mapa web actualizados", {
+              nuevoPos,
+              tieneIframe: Boolean(iframeRef.current?.contentWindow),
+            });
+          },
+          (error) => {
+            gpsRespondio = true;
+            clearTimeout(gpsWatchdog);
+            console.error("[MapaCliente ubicación] Error GPS web", {
+              code: error?.code,
+              message: error?.message,
+            });
+            Alert.alert("Error", "No se pudo obtener tu ubicación actual. Verifica los permisos.");
+          },
+          { enableHighAccuracy: false, timeout: 30000, maximumAge: 60000 }
+        );
+        return;
+      }
+
+      const { Location } = require("expo-location");
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      console.log("[MapaCliente ubicación] Permiso nativo", { status });
+      if (status !== "granted") {
+        Alert.alert("Permiso denegado", "Se necesita acceso a tu ubicación.");
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      console.log("[MapaCliente ubicación] GPS nativo recibido", location?.coords);
+      const { latitude, longitude } = location.coords;
+      const nuevoPos = { latitude, longitude };
+      const direccionTemporal = {
+        direccion_id: `temp_${Date.now()}`,
+        latitud: latitude,
+        longitud: longitude,
+        calle: "Ubicación actual",
+        numero_calle: "",
+        colonia: "Seleccionada en el mapa",
+      };
+      direccionSeleccionadaIdRef.current = null;
+      direccionSeleccionadaActivaRef.current = false;
+      setDireccionSeleccionadaId(null);
+      setDireccionSeleccionada(direccionTemporal);
+      storage.setItem(DIRECCION_SELECCIONADA_KEY, JSON.stringify(direccionTemporal));
+      setGpsPos(nuevoPos);
+      setClientePos(nuevoPos);
+      setAddress(null);
+      setDisplayCoords(`Lat: ${latitude.toFixed(6)}\nLng: ${longitude.toFixed(6)}`);
+      setPinMovido(true);
+      setPinLocationMovida(nuevoPos);
+      mapRef.current?.animateToRegion?.({
+        latitude,
+        longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      }, 500);
+      console.log("[MapaCliente ubicación] Estado y mapa nativo actualizados", {
+        nuevoPos,
+        tieneAnimateToRegion: Boolean(mapRef.current?.animateToRegion),
+      });
+    } catch (error) {
+      console.error("[MapaCliente ubicación] Error obteniendo ubicación", error);
+      Alert.alert("Error", "No se pudo obtener tu ubicación actual.");
     }
   };
 
@@ -660,6 +1113,7 @@ export default function MapaCliente({ route, navigation }) {
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          scrollEnabled={!isMapInteracting}
         >
           {/* CAJA DE UBICACIÓN */}
           <View style={styles.locationBox}>
@@ -670,6 +1124,15 @@ export default function MapaCliente({ route, navigation }) {
               <Text style={[styles.coords, { marginTop: 4 }]}>
                 🐕 Paseador: {paseadorPos.latitude.toFixed(5)}, {paseadorPos.longitude.toFixed(5)}
               </Text>
+            ) : null}
+
+            {pinMovido ? (
+              <TouchableOpacity
+                style={styles.usarUbicacionBtn}
+                onPress={usarUbicacionMovida}
+              >
+                <Text style={styles.usarUbicacionBtnText}>✓ Usar esta ubicación</Text>
+              </TouchableOpacity>
             ) : null}
 
             <TouchableOpacity
@@ -732,7 +1195,13 @@ export default function MapaCliente({ route, navigation }) {
           </View>
 
           {/* CONTENEDOR DEL MAPA */}
-          <View style={[styles.mapContainer, expanded && styles.mapContainerExpanded]}>
+          <View
+            style={[styles.mapContainer, expanded && styles.mapContainerExpanded]}
+            onTouchStart={() => setIsMapInteracting(true)}
+            onTouchMove={() => setIsMapInteracting(true)}
+            onTouchEnd={() => setIsMapInteracting(false)}
+            onTouchCancel={() => setIsMapInteracting(false)}
+          >
             {MapView && Marker && Polyline && !isWeb ? (
               <MapView
                 ref={mapRef}
@@ -767,9 +1236,9 @@ export default function MapaCliente({ route, navigation }) {
                 ref={iframeRef}
                 title="Mapa seguimiento cliente"
                 srcDoc={webMapHtml}
-                sandbox="allow-scripts"
+                sandbox="allow-scripts allow-same-origin"
                 onLoad={sendInitialPosition}
-                style={styles.mapWebView}
+                style={{ width: "100%", height: "100%", border: "none", pointerEvents: "auto" }}
               />
             ) : (
               <Image
@@ -789,12 +1258,52 @@ export default function MapaCliente({ route, navigation }) {
               </Text>
             </TouchableOpacity>
 
+            <TouchableOpacity
+              style={styles.localizarBtn}
+              onPress={irAMiUbicacion}
+            >
+              <Text style={styles.localizarBtnText}>📍</Text>
+            </TouchableOpacity>
+
             {!expanded && (
               <Text style={styles.instructions}>
                 {paseadorPos ? "🐕 Viendo al paseador" : "Arrastra el pin 📍"}
               </Text>
             )}
           </View>
+
+          {paseadorInfo ? (
+            <TouchableOpacity style={styles.paseadorCard} onPress={verDetallesPaseador} activeOpacity={0.9}>
+              <Image
+                source={
+                  paseadorInfo.url_foto_perfil
+                    ? { uri: `${API_URL}/uploads/${paseadorInfo.url_foto_perfil}` }
+                    : require("../../../assets/perfil.png")
+                }
+                style={styles.paseadorFoto}
+              />
+              <View style={styles.paseadorInfo}>
+                <Text style={styles.paseadorNombre} numberOfLines={1}>
+                  {`${paseadorInfo.nombre}${paseadorInfo.apellido ? ` ${paseadorInfo.apellido}` : ""}`}
+                </Text>
+                <Text style={styles.paseadorCalificacion}>
+                  Calificación: {calificacionPromedio === null ? "..." : `${calificacionPromedio.toFixed(1)} / 5`}
+                </Text>
+              </View>
+              <Text style={styles.paseadorArrow}>›</Text>
+            </TouchableOpacity>
+          ) : null}
+
+          {prorrogaEntregaExpiraEn ? (
+            <View style={{ backgroundColor: "#FFF3CD", borderRadius: 12, padding: 12, marginTop: 10 }}>
+              <Text style={{ color: "#664D03", fontWeight: "700" }}>
+                Te damos más tiempo para la entrega de las mascotas.
+              </Text>
+              <Text style={{ color: "#B42318", fontSize: 18, fontWeight: "800", marginTop: 4 }}>
+                {`${Math.floor(Math.max(0, prorrogaEntregaExpiraEn - prorrogaAhora) / 60000)}:${String(Math.floor((Math.max(0, prorrogaEntregaExpiraEn - prorrogaAhora) % 60000) / 1000)).padStart(2, "0")}`}
+              </Text>
+            </View>
+          ) : null}
 
           <TouchableOpacity style={styles.addButton} onPress={handleAddStartLocation}>
             <Text style={styles.addIcon}>+</Text>
@@ -805,6 +1314,105 @@ export default function MapaCliente({ route, navigation }) {
 
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
+      <Modal
+        visible={showPaseadorCancelado}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setShowPaseadorCancelado(false);
+          navigation.reset({ index: 0, routes: [{ name: "Inicio_cliente" }] });
+        }}
+      >
+        <View style={styles.canceladoModalOverlay}>
+          <View style={styles.canceladoModalCard}>
+            <Text style={styles.canceladoModalText}>{mensajeCancelacion}</Text>
+            <TouchableOpacity
+              style={styles.canceladoModalButton}
+              onPress={() => {
+                setShowPaseadorCancelado(false);
+                navigation.reset({ index: 0, routes: [{ name: "Inicio_cliente" }] });
+              }}
+            >
+              <Text style={styles.canceladoModalButtonText}>Cerrar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showEntregaModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          entregaInicialPendienteRef.current = false;
+          setShowEntregaModal(false);
+          setRespuestaEntregaExpiraEn(null);
+                    if (faseEntrega === "final") {
+                      socket.emit("cliente:entrega:confirmar", { servicioId, respuesta: false });
+                    } else {
+            socket.emit("cliente:mascotas:no-entregadas", { servicioId });
+          }
+        }}
+      >
+        <View style={styles.canceladoModalOverlay}>
+          <View style={styles.canceladoModalCard}>
+            <Text style={styles.canceladoModalText}>
+              {faseEntrega === "final"
+                ? "Las mascotas llegaron sanos y salvos?"
+                : pasoEntregaInicial === "llegada"
+                  ? "El paseador ya está afuera esperándote. ¿Vas a entregar las mascotas?"
+                  : "¿Entregaste las mascotas al paseador?"}
+                {faseEntrega === "recogida" && pasoEntregaInicial === "llegada" && respuestaEntregaExpiraEn
+                  ? `  ${Math.max(0, Math.ceil((respuestaEntregaExpiraEn - respuestaEntregaAhora) / 1000))}s`
+                  : ""}
+                {faseEntrega === "recogida" && esperaEntregaExpiraEn
+                  ? `  (${Math.floor(Math.max(0, esperaEntregaExpiraEn - esperaEntregaAhora) / 60000)}:${String(Math.floor((Math.max(0, esperaEntregaExpiraEn - esperaEntregaAhora) % 60000) / 1000)).padStart(2, "0")})`
+                  : ""}
+            </Text>
+            <View style={styles.entregaModalActions}>
+              <TouchableOpacity
+                style={styles.entregaModalNoButton}
+                onPress={() => {
+                  entregaInicialPendienteRef.current = false;
+                  setShowEntregaModal(false);
+                    setRespuestaEntregaExpiraEn(null);
+                  if (faseEntrega === "final") {
+                    socket.emit("cliente:entrega:confirmar", { servicioId, respuesta: false });
+                  } else {
+                      socket.emit("cliente:mascotas:no-entregadas", { servicioId });
+                    }
+                }}
+              >
+                  <Text style={styles.canceladoModalButtonText}>No</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.canceladoModalButton}
+                onPress={() => {
+                  entregaInicialPendienteRef.current = false;
+                  setShowEntregaModal(false);
+                  if (faseEntrega === "final") {
+                    socket.emit("cliente:entrega:confirmar", { servicioId, respuesta: true });
+                  } else if (pasoEntregaInicial === "llegada") {
+                    setPasoEntregaInicial("entrega");
+                    setRespuestaEntregaExpiraEn(null);
+                    entregaInicialPendienteRef.current = true;
+                    setShowEntregaModal(true);
+                  } else {
+                    entregaInicialPendienteRef.current = false;
+                    setRespuestaEntregaExpiraEn(null);
+                    setEsperaEntregaExpiraEn(null);
+                    storage.removeItem(ESPERA_ENTREGA_KEY);
+                    socket.emit("cliente:mascotas:entregadas", { servicioId });
+                  }
+                }}
+              >
+                  <Text style={styles.canceladoModalButtonText}>Sí</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* BARRA INFERIOR CLIENTE */}
       <View style={styles.bottomTab}>
         <TouchableOpacity
@@ -813,7 +1421,7 @@ export default function MapaCliente({ route, navigation }) {
           onMouseLeave={() => setHoveredTab(null)}
           onPressIn={() => setHoveredTab(0)}
           onPressOut={() => setHoveredTab(null)}
-          onPress={() => navigation.navigate("Inicio_cliente")}
+          onPress={volverAInicio}
         >
           {hoveredTab === 0 && <Text style={styles.tabLabel}>Inicio</Text>}
           <Image source={require("../../../assets/casa.png")} style={styles.tabIconImg} />

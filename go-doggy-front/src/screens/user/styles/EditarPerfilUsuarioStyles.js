@@ -3,6 +3,7 @@ import { s, vs, ms } from "../../../utils/responsive";
 
 export const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F5F0" },
+  scrollContent: { paddingBottom: vs(90) },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -10,6 +11,16 @@ export const styles = StyleSheet.create({
     paddingTop: vs(50),
   },
   title: { fontSize: ms(26), textAlign: "center", fontFamily: "serif", marginBottom: vs(10) },
+  saveStatus: {
+    marginHorizontal: s(18),
+    marginBottom: vs(10),
+    borderRadius: s(8),
+    paddingHorizontal: s(12),
+    paddingVertical: vs(10),
+  },
+  saveStatusSuccess: { backgroundColor: "#DDF4E6", borderWidth: 1, borderColor: "#4A8F6A" },
+  saveStatusError: { backgroundColor: "#FBE2E2", borderWidth: 1, borderColor: "#C94B4B" },
+  saveStatusText: { color: "#333", fontSize: ms(13), fontWeight: "600", textAlign: "center" },
   formCard: {
     backgroundColor: "#99D9C1",
     marginHorizontal: s(18),
@@ -28,6 +39,14 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  photoButton: {
+    backgroundColor: "#E6B5B5",
+    borderRadius: s(18),
+    marginTop: vs(10),
+    paddingHorizontal: s(16),
+    paddingVertical: vs(8),
+  },
+  photoButtonText: { fontWeight: "bold", fontSize: ms(13), color: "#333" },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -43,6 +62,19 @@ export const styles = StyleSheet.create({
     borderRadius: s(8),
     paddingHorizontal: s(10),
   },
+  inputDisabled: {
+    color: "#666",
+    backgroundColor: "rgba(0,0,0,0.08)",
+  },
+  profileValue: {
+    backgroundColor: "#D9D9D9",
+    minHeight: vs(40),
+    borderRadius: s(8),
+    paddingHorizontal: s(10),
+    paddingVertical: vs(10),
+    fontSize: ms(14),
+    color: "#333",
+  },
   saveBtn: {
     backgroundColor: "#E6B5B5",
     paddingVertical: vs(12),
@@ -50,5 +82,38 @@ export const styles = StyleSheet.create({
     borderRadius: s(25),
     marginTop: vs(10),
   },
+  saveBtnDisabled: { opacity: 0.6 },
   saveBtnText: { fontWeight: "bold", fontSize: ms(17), color: "#000" },
+  loadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: vs(8),
+    gap: s(8),
+  },
+  loadingText: { fontSize: ms(13), color: "#4A8F6A", fontWeight: "600" },
+  optionList: { paddingVertical: vs(8), gap: s(8) },
+  optionChip: {
+    paddingHorizontal: s(14),
+    paddingVertical: vs(8),
+    borderRadius: s(18),
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#C9BFA7",
+  },
+  optionChipSelected: { backgroundColor: "#85E5B5", borderColor: "#85E5B5" },
+  optionChipText: { fontSize: ms(13), color: "#5A5345", fontWeight: "600" },
+  optionChipTextSelected: { color: "#1F3A2A" },
+  bottomTab: {
+    flexDirection: "row",
+    backgroundColor: "#A3D9C9",
+    height: vs(65),
+    position: "absolute",
+    bottom: 0,
+    width: "100%",
+    justifyContent: "space-around",
+    alignItems: "center",
+  },
+  tabIconImg: { width: s(42), height: s(42), resizeMode: "contain" },
+  tabItem: { alignItems: "center", justifyContent: "center" },
+  tabLabel: { fontSize: ms(11), fontWeight: "bold", color: "#333", marginBottom: vs(4) },
 });

@@ -299,9 +299,20 @@ export default function RegistroUsuario({ navigation }) {
       console.log("Respuesta del servidor:", response.status, data);
 
       if (response.ok) {
-        Alert.alert("Éxito", "Usuario registrado correctamente");
-        navigation.navigate("Login");
+        navigation.navigate("VerificacionClientePaseador", {
+          tipo: "cliente",
+          correo: correo.trim(),
+        });
       } else {
+        if (String(data.message || "").toLowerCase().includes("correo ya está registrado")) {
+          setErrorCorreo("Este correo ya está registrado");
+          Alert.alert(
+            "Correo ya registrado",
+            "El correo que ingresaste ya tiene una cuenta. Usa otro correo o inicia sesión."
+          );
+          return;
+        }
+
         const missingFields = Array.isArray(data.missingFields)
           ? data.missingFields.join(", ")
           : "";

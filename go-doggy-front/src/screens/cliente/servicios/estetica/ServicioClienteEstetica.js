@@ -39,28 +39,32 @@ export default function Servicio_Cliente_Estetica({ route, navigation }) {
       nombre: "Baño y Secado",
       tipo: "Higiene",
       empresa: "Pet Spa Deluxe",
-      imagen: require("../../../../../assets/Imagen_estetica.png"),
+      imagen: { uri: "https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=800&q=85" },
+      precio: "$35.00", duracion: "45 minutos", descripcion: "Baño completo con secado y cepillado para dejar el pelaje limpio y brillante.", productos_usados: "Champú hipoalergénico y acondicionador", incluye: "Baño, secado, cepillado y corte de uñas", experiencia: "8 años en grooming",
     },
     {
       id: 2,
       nombre: "Corte y Peinado",
       tipo: "Grooming",
       empresa: "Style Dogs",
-      imagen: require("../../../../../assets/Imagen_estetica.png"),
+      imagen: { uri: "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=800&q=85" },
+      precio: "$48.00", duracion: "60 minutos", descripcion: "Corte personalizado según la raza y el estilo elegido por la familia.", productos_usados: "Productos hidratantes y spray desenredante", incluye: "Corte, peinado, baño y perfume suave", experiencia: "Estilistas certificados",
     },
     {
       id: 3,
       nombre: "Limpieza de Oídos",
       tipo: "Higiene Especializada",
       empresa: "Vet Care Plus",
-      imagen: require("../../../../../assets/Imagen_estetica.png"),
+      imagen: { uri: "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=800&q=85" },
+      precio: "$20.00", duracion: "20 minutos", descripcion: "Limpieza cuidadosa para retirar suciedad y ayudar a prevenir molestias.", productos_usados: "Solución ótica veterinaria", incluye: "Revisión externa y limpieza", experiencia: "Supervisión veterinaria",
     },
     {
       id: 4,
       nombre: "Corte de Uñas",
       tipo: "Mantenimiento",
       empresa: "Pawsome Grooming",
-      imagen: require("../../../../../assets/Imagen_estetica.png"),
+      imagen: { uri: "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=800&q=85" },
+      precio: "$15.00", duracion: "15 minutos", descripcion: "Corte seguro de uñas para mejorar la comodidad durante los paseos.", productos_usados: "Cortaúñas profesional y lima", incluye: "Corte, limado y revisión de almohadillas", experiencia: "Manejo amable y paciente",
     },
   ];
 
@@ -92,6 +96,7 @@ export default function Servicio_Cliente_Estetica({ route, navigation }) {
               <Text style={styles.servicioName}>{servicio.nombre}</Text>
               <Text style={styles.servicioType}>{servicio.tipo}</Text>
               <Text style={styles.empresa}>{servicio.empresa}</Text>
+              <Text style={styles.servicioDescription} numberOfLines={2}>{servicio.descripcion}</Text>
             </View>
           </TouchableOpacity>
         ))}

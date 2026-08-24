@@ -24,12 +24,6 @@ export default function Servicio_Cliente_Inicio({ route, navigation }) {
       action: () => navigation.navigate("Servicio_Cliente_Comida"),
     },
     {
-      id: 2,
-      nombre: "Paseadores",
-      imagen: require("../../../../../assets/imagen_perro_correa.png"),
-      action: () => navigation.navigate("Servicio_Cliente_Paseador"),
-    },
-    {
       id: 3,
       nombre: "Estética",
       imagen: require("../../../../../assets/Imagen_estetica.png"),

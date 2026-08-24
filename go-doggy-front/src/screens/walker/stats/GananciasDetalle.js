@@ -14,25 +14,28 @@ function semanaLabel() {
 }
 
 export default function GananciasDetalle({ navigation }) {
-  const [total, setTotal]     = useState(null);
+  const [dailyData, setDailyData] = useState([0, 0, 0, 0, 0, 0, 0]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const u = JSON.parse(storage.getItem("usuario") || "{}");
-    if (u.usuario_id) {
-      apiFetch(`/ganancias/${u.usuario_id}`)
-        .then(d => setTotal(parseFloat(d.total_ganado || 0)))
-        .catch(() => setTotal(0))
-        .finally(() => setLoading(false));
-    } else { setLoading(false); }
-  }, []);
+    let paseador = {};
+    try { paseador = JSON.parse(storage.getItem("paseador") || "{}"); } catch (error) { paseador = {}; }
+    const paseadorId = Number(paseador.paseador_id || paseador.usuario_id || paseador.id || 0);
+    if (!paseadorId) {
+      setLoading(false);
+      return;
+    }
 
-  // Generar datos demo proporcionales al total real
-  const dailyData = useMemo(() => {
-    const base = total || 300;
-    const factors = [0.10, 0.14, 0.12, 0.18, 0.20, 0.14, 0.12];
-    return factors.map(f => Math.round(base * f));
-  }, [total]);
+    apiFetch(`/ganancias/semanal/${paseadorId}`)
+      .then((data) => {
+        const montos = Array.from({ length: 7 }, (_, index) =>
+          Number(data?.find((item) => Number(item.dia) === index + 1)?.monto || 0)
+        );
+        setDailyData(montos);
+      })
+      .catch(() => setDailyData([0, 0, 0, 0, 0, 0, 0]))
+      .finally(() => setLoading(false));
+  }, []);
 
   const chartHtml = useMemo(() => `<!DOCTYPE html>
 <html>
@@ -91,7 +94,7 @@ export default function GananciasDetalle({ navigation }) {
           <ActivityIndicator size="large" color="#4DD9C0" style={{marginTop: vs(40)}} />
         ) : (
           <>
-            <Text style={styles.totalLabel}>Ganancia semanal {moneda(total)}</Text>
+            <Text style={styles.totalLabel}>Ganancia semanal {moneda(dailyData.reduce((sum, monto) => sum + monto, 0))}</Text>
             <Text style={styles.fechaLabel}>{semanaLabel()}</Text>
             <View style={styles.chartBox}>
               {Platform.OS === "web" ? (

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { View, Text, Image, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { styles } from "./ServicioEsteticaDetallesStyles";
 
@@ -70,24 +70,6 @@ export default function Servicio_Detalles_Estetica({ route, navigation }) {
           <Text style={styles.detailValue}>{servicioData.experiencia}</Text>
         </View>
 
-        {/* BOTONES */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.reservarButton}
-            onPress={() => Alert.alert("Reservar", `¿Deseas reservar "${servicioData.nombre}" en ${servicioData.empresa}?`, [
-              { text: "Cancelar", style: "cancel" },
-              { text: "Confirmar", onPress: () => Alert.alert("¡Reserva confirmada!", `Tu cita en ${servicioData.empresa} ha sido registrada.`) },
-            ])}
-          >
-            <Text style={styles.buttonText}>Reservar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.contactButton}
-            onPress={() => Alert.alert("Contactar", `${servicioData.empresa}\nDuración: ${servicioData.duracion}`)}
-          >
-            <Text style={styles.buttonText}>Contactar</Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
     </View>
   );

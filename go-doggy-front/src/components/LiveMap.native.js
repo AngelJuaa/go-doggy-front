@@ -23,12 +23,24 @@ function buildHtml(center) {
 <body>
   <div id="map"></div>
   <script>
-    var map = L.map('map', { zoomControl: false, attributionControl: false }).setView([${c[0]}, ${c[1]}], 16);
+    var map = L.map('map', {
+      zoomControl: false,
+      attributionControl: false,
+      dragging: true,
+      touchZoom: true,
+      scrollWheelZoom: true,
+      doubleClickZoom: true,
+      boxZoom: true,
+      keyboard: true
+    }).setView([${c[0]}, ${c[1]}], 16);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
     var markerLayer = L.layerGroup().addTo(map);
     var routeLine = null;
     var firstCenter = true;
+    var lastMapCommandId = null;
+    var userMoved = false;
+    map.on('dragstart zoomstart', function () { userMoved = true; });
 
     var walkerIcon = L.divIcon({
       html: '<div style="font-size:30px;line-height:30px;">🐕</div>',
@@ -46,8 +58,17 @@ function buildHtml(center) {
           routeLine = L.polyline(data.route, { color: '#34c759', weight: 5 }).addTo(map);
         }
         if (data.center && data.center.length === 2) {
-          map.setView(data.center, map.getZoom(), { animate: !firstCenter });
+          if (!userMoved) map.setView(data.center, map.getZoom(), { animate: !firstCenter });
           firstCenter = false;
+        }
+        if (data.mapCommand && data.mapCommand.id !== lastMapCommandId) {
+          lastMapCommandId = data.mapCommand.id;
+          if (data.mapCommand.type === 'zoomIn') map.setZoom(map.getZoom() + 1);
+          if (data.mapCommand.type === 'zoomOut') map.setZoom(map.getZoom() - 1);
+          if (data.mapCommand.type === 'centerPaseador') {
+            userMoved = false;
+            map.setView(data.mapCommand.center, map.getZoom(), { animate: true });
+          }
         }
         // Forzar recálculo del tamaño (a veces el WebView mide mal al inicio)
         setTimeout(function () { map.invalidateSize(); }, 80);
@@ -58,12 +79,12 @@ function buildHtml(center) {
 </html>`;
 }
 
-export default function LiveMap({ center, markers = [], route = [] }) {
+export default function LiveMap({ center, markers = [], route = [], mapCommand = null }) {
   const webRef = useRef(null);
   // El HTML base se construye UNA sola vez (no se recarga en cada update).
   const html = useMemo(() => buildHtml(center), []);
 
-  const dataStr = JSON.stringify({ center, markers, route });
+  const dataStr = JSON.stringify({ center, markers, route, mapCommand });
 
   // Empuja los datos al WebView SIN recargar la página (tiempo real).
   const pushData = () => {
@@ -91,6 +112,8 @@ export default function LiveMap({ center, markers = [], route = [] }) {
         startInLoadingState
         androidLayerType="hardware"
         scrollEnabled={false}
+        nestedScrollEnabled={false}
+        bounces={false}
       />
     </View>
   );

@@ -3,14 +3,17 @@ import { View, Text, TouchableOpacity, Image, StyleSheet } from "react-native";
 
 export default function Welcome({ route, navigation }) {
   const { tipo } = route.params || { tipo: "cliente" };
+  const esPaseador = tipo === "paseador";
 
   return (
     <View style={styles.container}>
       <TouchableOpacity
-        style={styles.backButton}
+        style={[styles.backButton, esPaseador && styles.backButtonPaseador]}
         onPress={() => navigation.navigate("WelcomePregunta")}
       >
-        <Text style={styles.backText}>← No soy {tipo}, cambiar rol</Text>
+        <Text style={[styles.backText, esPaseador && styles.backTextPaseador]}>
+          ← No soy {tipo}, cambiar rol
+        </Text>
       </TouchableOpacity>
 
       <View style={styles.circleContainer}>
@@ -22,7 +25,7 @@ export default function Welcome({ route, navigation }) {
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity
-          style={styles.btnIniciar}
+          style={[styles.btnIniciar, esPaseador && styles.btnIniciarPaseador]}
           onPress={() => navigation.navigate("Login", { tipo: tipo })}
         >
           <Text style={styles.btnText}>Iniciar sesión</Text>
@@ -61,7 +64,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
   },
+  backButtonPaseador: { backgroundColor: "rgba(33, 150, 243, 0.12)" },
   backText: { fontSize: 14, color: "#E95295", fontWeight: "700" },
+  backTextPaseador: { color: "#2196F3" },
   // Círculo perfecto en cualquier tamaño gracias a aspectRatio + borderRadius alto
   circleContainer: {
     width: "65%",
@@ -87,6 +92,7 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     alignItems: "center",
   },
+  btnIniciarPaseador: { backgroundColor: "#2196F3" },
   btnRegistrar: {
     backgroundColor: "#D3D3D3",
     width: "80%",

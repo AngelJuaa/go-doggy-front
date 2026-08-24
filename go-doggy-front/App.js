@@ -7,6 +7,9 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import WelcomePregunta from "./src/screens/welcome/WelcomePregunta";
 import Welcome from "./src/screens/welcome/Welcome";
 import Login from "./src/screens/auth/Login";
+import VerificacionClientePaseador from "./src/screens/auth/verificacionClientePaseador";
+import RecuperarContraseniaClientePaseador from "./src/screens/auth/recuperarContraseniaClientePaseador";
+import RegistrarNuevaContrasenia from "./src/screens/auth/registrarNuevaContrasenia";
 import RegistroUsuario from "./src/screens/auth/RegistroUsuario";
 import RegistroPaseador from "./src/screens/auth/RegistroPaseador";
 import InicioCliente from "./src/screens/cliente/InicioCliente";
@@ -33,10 +36,15 @@ import RegistroMascota from "./src/screens/pets/RegistroMascota";
 import CalificacionesUsuario from "./src/screens/user/CalificacionesUsuario";
 import ConfiguracionUsuario from "./src/screens/user/ConfiguracionUsuario";
 import LegalUsuario from "./src/screens/user/LegalUsuario";
+import LegalCliente from "./src/screens/cliente/LegalCliente";
+import TerminosYCondicionesCliente from "./src/screens/cliente/TerminosYCondicionesCliente";
+import PoliticasDePrivacidadCliente from "./src/screens/cliente/PoliticasDePrivacidadCliente";
+import SoftwareDeTercerosCliente from "./src/screens/cliente/SoftwareDeTercerosCliente";
 import SeguridadUsuario from "./src/screens/user/SeguridadUsuario";
 import MascotaDetalles from "./src/screens/pets/MascotaDetalles";
 import PeticionPaseo from "./src/screens/cliente/PeticionPaseo";
 import MapaCliente from "./src/screens/cliente/MapaCliente";
+import VerDetallesPaseadorEnMapa from "./src/screens/cliente/verDetallesPaseadorEnMapa";
 import PagoMercadoPago from "./src/screens/cliente/PagoMercadoPago";
 import MetodoPagoCliente from "./src/screens/cliente/MetodoPagoCliente";
 import AgregarDireccionCliente from "./src/screens/cliente/agregarDireccionCliente";
@@ -51,17 +59,25 @@ import EstrellasDetalle  from "./src/screens/walker/stats/EstrellasDetalle";
 import PaseosPaseador from "./src/screens/walker/PaseosPaseador";
 import PerfilPaseador from "./src/screens/walker/PerfilPaseador";
 import RutaPaseo from "./src/screens/walker/RutaPaseo";
+import VerMascotasAPasear from "./src/screens/walker/verMascotasAPasear";
 import VerReciboPaseador from "./src/screens/walker/VerReciboPaseador";
 import VerPerfilPaseador from "./src/screens/walker/VerPerfilPaseador";
 import EditarPerfilPaseador from "./src/screens/walker/EditarPerfilPaseador";
+import LegalPaseador from "./src/screens/walker/LegalPaseador";
+import TerminosYCondicionesPaseador from "./src/screens/walker/TerminosYCondicionesPaseador";
+import PoliticasDePrivacidadPaseador from "./src/screens/walker/PoliticasDePrivacidadPaseador";
+import SoftwareDeTercerosPaseador from "./src/screens/walker/SoftwareDeTercerosPaseador";
 import NotificacionesPaseador from "./src/screens/user/NotificacionesPaseador";
 import NotificacionesCliente from "./src/screens/cliente/notificaciones/NotificacionesCliente";
 import NotificacionDetalle from "./src/screens/user/NotificacionDetalle";
+import ReseñaAPaseadorDeCliente from "./src/screens/cliente/ReseñaAPaseadorDeCliente";
 import BilleteraUsuario from "./src/screens/user/BilleteraUsuario";
 import AyudaUsuario from "./src/screens/user/AyudaUsuario";
 import { apiFetch } from "./src/utils/api";
 import storage from "./src/utils/storage";
 import { getSocket } from "./src/utils/socket";
+import { addClientNotification } from "./src/utils/clientNotifications";
+import { addWalkerNotification } from "./src/utils/walkerNotifications";
 
 const Stack = createStackNavigator();
 const navigationRef = createNavigationContainerRef();
@@ -82,6 +98,7 @@ const styles = StyleSheet.create({
 
 export default function App() {
   const paymentOpenedRef = useRef({ servicioId: null, opened: false });
+  const entregaFinalPendienteRef = useRef(null);
   const [authRole, setAuthRole] = useState(null);
   const [authUser, setAuthUser] = useState(null);
 
@@ -124,9 +141,11 @@ export default function App() {
     refreshAuth();
     storage.subscribe("usuario", refreshAuth);
     storage.subscribe("paseador", refreshAuth);
+    storage.subscribe("active_role", refreshAuth);
     return () => {
       storage.unsubscribe("usuario", refreshAuth);
       storage.unsubscribe("paseador", refreshAuth);
+      storage.unsubscribe("active_role", refreshAuth);
     };
   }, []);
 
@@ -159,6 +178,7 @@ export default function App() {
 
     const activeRole = storage.getItem("active_role");
     const shouldHandleClienteFlow = (activeRole === "cliente" || authRole === "cliente") && clienteId > 0;
+    const shouldHandlePaseadorFlow = authRole === "paseador" && Number(authUser?.paseador_id || 0) > 0;
 
     if (shouldHandleClienteFlow) {
       socket.emit("cliente:online", { clienteId });
@@ -265,15 +285,187 @@ export default function App() {
       );
     };
 
+    const onPaseadorLlegoRecogida = (payload) => {
+      if (!shouldHandleClienteFlow) return;
+      if (clienteId && Number(payload?.dueno_id || clienteId) !== clienteId) return;
+      if (["PeticionPaseo", "MetodoPagoCliente"].includes(navigationRef.getCurrentRoute()?.name)) return;
+
+      addClientNotification({
+        servicioId: payload?.servicio_id,
+        iconColor: "#43A047",
+        iconText: "📍",
+        title: "Paseador en el domicilio",
+        subtitle: "El paseador ha llegado al domicilio",
+        description: "Tu paseador llegó a la dirección acordada. Confirma la entrega de tus mascotas para iniciar el paseo.",
+      });
+    };
+
+    const onPaseadorPorLlegar = (payload) => {
+      if (!shouldHandleClienteFlow) return;
+      if (clienteId && Number(payload?.dueno_id || clienteId) !== clienteId) return;
+
+      addClientNotification({
+        servicioId: payload?.servicio_id,
+        iconColor: "#1E88E5",
+        iconText: "🐾",
+        title: "Paseador por llegar",
+        subtitle: "El paseador está por llegar",
+        description: "El paseador está cerca de la dirección destino y pronto entregará a tus mascotas.",
+      });
+    };
+
+    const onSolicitudEntregaFinal = (payload) => {
+      const servicioId = Number(payload?.servicio_id || 0);
+      if (!shouldHandleClienteFlow || !servicioId) return;
+
+      if (payload?.fase === "recogida") {
+        const currentRoute = navigationRef.getCurrentRoute()?.name;
+        if (["Inicio_cliente", "MapaCliente", "PeticionPaseo", "MetodoPagoCliente"].includes(currentRoute)) return;
+
+        const confirmarRecogida = (respuesta) => {
+          if (respuesta) {
+            socket.emit("cliente:mascotas:entregadas", { servicioId });
+          }
+        };
+
+        Alert.alert(
+          "Confirmación de entrega",
+          "¿El paseador recibió la mascota?",
+          [
+            { text: "No", style: "cancel", onPress: () => confirmarRecogida(false) },
+            { text: "Sí", onPress: () => confirmarRecogida(true) },
+          ]
+        );
+        return;
+      }
+
+      if (entregaFinalPendienteRef.current === servicioId) return;
+
+      entregaFinalPendienteRef.current = servicioId;
+      const currentRoute = navigationRef.getCurrentRoute()?.name;
+      if (currentRoute !== "MapaCliente") {
+        navigationRef.navigate("MapaCliente", {
+          servicioId,
+          mostrarEntregaFinal: true,
+        });
+      }
+    };
+
+    const onEntregaFinalConfirmada = (payload) => {
+      const servicioId = Number(payload?.servicio_id || 0);
+      if (!shouldHandleClienteFlow || !servicioId) return;
+      entregaFinalPendienteRef.current = null;
+      Alert.alert("Paseo concluido", "El paseo ha concluido, gracias por su preferencia.");
+    };
+
+    const onPaseadorServicioConfirmado = (payload) => {
+      const servicio = payload?.servicio || payload;
+      const servicioId = Number(servicio?.servicio_id || 0);
+      if (!shouldHandlePaseadorFlow || !servicioId) return;
+      addWalkerNotification({
+        servicioId,
+        iconColor: "#2E7D4F",
+        iconText: "✅",
+        title: "Paseo aceptado",
+        subtitle: "El cliente confirmó tu servicio",
+        description: "El cliente aceptó la tarifa y confirmó el paseo. Dirígete a la dirección indicada para comenzar el servicio.",
+        details: {
+          Dueño: servicio.dueno_nombre || "Cliente",
+          Duración: servicio.duracion_minutos ? `${servicio.duracion_minutos} min` : "No disponible",
+          Dirección: servicio.direccion_calle
+            ? `${servicio.direccion_calle} #${servicio.direccion_numero_calle || "S/N"}`
+            : "No disponible",
+        },
+      });
+    };
+
+    const onPaseadorMascotasEntregadas = (payload) => {
+      const servicioId = Number(payload?.servicio_id || 0);
+      if (!shouldHandlePaseadorFlow || !servicioId) return;
+      addWalkerNotification({
+        servicioId,
+        iconColor: "#1E88E5",
+        iconText: "🐾",
+        title: "Paseo iniciado",
+        subtitle: "Las mascotas fueron entregadas",
+        description: "El cliente confirmó la entrega de las mascotas. La caminata está en proceso.",
+      });
+    };
+
+    const onPaseadorEntregaRechazada = (payload) => {
+      const servicioId = Number(payload?.servicio_id || 0);
+      if (!shouldHandlePaseadorFlow || !servicioId) return;
+      addWalkerNotification({
+        servicioId,
+        iconColor: "#E53935",
+        iconText: "!",
+        title: "Entrega no confirmada",
+        subtitle: "El cliente indicó que aún no recibió las mascotas",
+        description: "La entrega final no fue confirmada por el cliente. Ponte en contacto para completar el servicio.",
+      });
+    };
+
+    const onPaseadorServicioCancelado = (payload) => {
+      const servicioId = Number(payload?.servicio_id || 0);
+      if (!shouldHandlePaseadorFlow || !servicioId) return;
+      addWalkerNotification({
+        servicioId,
+        iconColor: "#C62828",
+        iconText: "✕",
+        title: "Paseo cancelado",
+        subtitle: "El servicio fue cancelado",
+        description: "El paseo asociado a esta solicitud fue cancelado y ya no se encuentra activo.",
+      });
+    };
+
+    const onPaseadorServicioFinalizado = (payload) => {
+      const servicioId = Number(payload?.servicio_id || 0);
+      if (!shouldHandlePaseadorFlow || !servicioId) return;
+      addWalkerNotification({
+        servicioId,
+        iconColor: "#43A047",
+        iconText: "🏁",
+        title: "Paseo concluido",
+        subtitle: "El cliente confirmó la entrega final",
+        description: "La caminata terminó correctamente. Consulta la información del servicio y sus importes en el historial.",
+        details: {
+          Distancia: payload?.distancia_metros ? `${payload.distancia_metros} m` : "0 m",
+          "Monto obtenido": payload?.costo_total !== undefined ? `$${Number(payload.costo_total).toFixed(2)}` : "No disponible",
+        },
+      });
+    };
+
     if (shouldHandleClienteFlow) {
       socket.on("cliente:servicio:aceptado", onServicioAceptado);
       socket.on("cliente:servicio:confirmar_tarifa", onConfirmarTarifa);
+      socket.on("cliente:paseador:llego-recogida", onPaseadorLlegoRecogida);
+      socket.on("cliente:paseador:por-llegar", onPaseadorPorLlegar);
+      socket.on("cliente:entrega:solicitud", onSolicitudEntregaFinal);
+      socket.on("servicio:entrega:confirmada", onEntregaFinalConfirmada);
+    }
+    if (shouldHandlePaseadorFlow) {
+      socket.on("paseador:servicio:confirmado", onPaseadorServicioConfirmado);
+      socket.on("paseador:mascotas:entregadas", onPaseadorMascotasEntregadas);
+      socket.on("paseador:entrega:rechazada", onPaseadorEntregaRechazada);
+      socket.on("servicio:cancelado", onPaseadorServicioCancelado);
+      socket.on("servicio:finalizado", onPaseadorServicioFinalizado);
     }
 
     return () => {
       if (shouldHandleClienteFlow) {
         socket.off("cliente:servicio:aceptado", onServicioAceptado);
         socket.off("cliente:servicio:confirmar_tarifa", onConfirmarTarifa);
+        socket.off("cliente:paseador:llego-recogida", onPaseadorLlegoRecogida);
+        socket.off("cliente:paseador:por-llegar", onPaseadorPorLlegar);
+        socket.off("cliente:entrega:solicitud", onSolicitudEntregaFinal);
+        socket.off("servicio:entrega:confirmada", onEntregaFinalConfirmada);
+      }
+      if (shouldHandlePaseadorFlow) {
+        socket.off("paseador:servicio:confirmado", onPaseadorServicioConfirmado);
+        socket.off("paseador:mascotas:entregadas", onPaseadorMascotasEntregadas);
+        socket.off("paseador:entrega:rechazada", onPaseadorEntregaRechazada);
+        socket.off("servicio:cancelado", onPaseadorServicioCancelado);
+        socket.off("servicio:finalizado", onPaseadorServicioFinalizado);
       }
     };
   }, [authRole, authUser]);
@@ -288,6 +480,9 @@ export default function App() {
         <Stack.Screen name="WelcomePregunta" component={WelcomePregunta} />
         <Stack.Screen name="Welcome" component={Welcome} />
         <Stack.Screen name="Login" component={Login} />
+        <Stack.Screen name="VerificacionClientePaseador" component={VerificacionClientePaseador} />
+        <Stack.Screen name="RecuperarContraseniaClientePaseador" component={RecuperarContraseniaClientePaseador} />
+        <Stack.Screen name="RegistrarNuevaContrasenia" component={RegistrarNuevaContrasenia} />
         <Stack.Screen name="RegistroUsuario" component={RegistroUsuario} />
         <Stack.Screen name="RegistroPaseador" component={RegistroPaseador} />
         <Stack.Screen name="Inicio_cliente" component={InicioCliente} />
@@ -357,10 +552,15 @@ export default function App() {
           component={ConfiguracionUsuario}
         />
         <Stack.Screen name="LegalUsuario" component={LegalUsuario} />
+        <Stack.Screen name="LegalCliente" component={LegalCliente} />
+        <Stack.Screen name="TerminosYCondicionesCliente" component={TerminosYCondicionesCliente} />
+        <Stack.Screen name="PoliticasDePrivacidadCliente" component={PoliticasDePrivacidadCliente} />
+        <Stack.Screen name="SoftwareDeTercerosCliente" component={SoftwareDeTercerosCliente} />
         <Stack.Screen name="SeguridadUsuario" component={SeguridadUsuario} />
         <Stack.Screen name="MascotaDetalles" component={MascotaDetalles} />
         <Stack.Screen name="PeticionPaseo" component={PeticionPaseo} />
         <Stack.Screen name="MapaCliente" component={MapaCliente} />
+        <Stack.Screen name="verDetallesPaseadorEnMapa" component={VerDetallesPaseadorEnMapa} />
         <Stack.Screen name="MercadoPago" component={PagoMercadoPago} />
         <Stack.Screen name="MetodoPagoCliente" component={MetodoPagoCliente} />
         <Stack.Screen name="AgregarDireccionCliente" component={AgregarDireccionCliente} />
@@ -376,11 +576,17 @@ export default function App() {
         <Stack.Screen name="PerfilPaseador" component={PerfilPaseador} />
         <Stack.Screen name="VerPerfilPaseador" component={VerPerfilPaseador} />
         <Stack.Screen name="EditarPerfilPaseador" component={EditarPerfilPaseador} />
+        <Stack.Screen name="LegalPaseador" component={LegalPaseador} />
+        <Stack.Screen name="TerminosYCondicionesPaseador" component={TerminosYCondicionesPaseador} />
+        <Stack.Screen name="PoliticasDePrivacidadPaseador" component={PoliticasDePrivacidadPaseador} />
+        <Stack.Screen name="SoftwareDeTercerosPaseador" component={SoftwareDeTercerosPaseador} />
         <Stack.Screen name="RutaPaseo" component={RutaPaseo} />
+        <Stack.Screen name="verMascotasAPasear" component={VerMascotasAPasear} />
         <Stack.Screen name="VerReciboPaseador" component={VerReciboPaseador} />
         <Stack.Screen name="NotificacionesCliente" component={NotificacionesCliente} />
         <Stack.Screen name="NotificacionesPaseador" component={NotificacionesPaseador} />
         <Stack.Screen name="NotificacionDetalle" component={NotificacionDetalle} />
+        <Stack.Screen name="ReseñaAPaseadorDeCliente" component={ReseñaAPaseadorDeCliente} />
         <Stack.Screen name="BilleteraUsuario" component={BilleteraUsuario} />
           <Stack.Screen name="AyudaUsuario" component={AyudaUsuario} />
         </Stack.Navigator>

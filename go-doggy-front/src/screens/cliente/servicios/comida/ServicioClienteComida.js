@@ -39,28 +39,32 @@ export default function Servicio_Cliente_Comida({ route, navigation }) {
       nombre: "Alimento Premium Perros",
       tipo: "Alimento Seco",
       precio: "$45.99",
-      imagen: require("../../../../../assets/imagen_comida_perro.png"),
+      imagen: { uri: "https://images.unsplash.com/photo-1589924691995-400dc9ecc119?auto=format&fit=crop&w=800&q=85" },
+      marca: "PetNutrition Pro", peso: "15 kg", edad_recomendada: "Adultos (1 a 7 años)", descripcion: "Croquetas de pollo y arroz para una alimentación diaria completa.", ingredientes: "Pollo deshidratado, arroz integral, vitaminas y minerales", garantia: "Satisfacción garantizada",
     },
     {
       id: 2,
       nombre: "Comida Húmeda Natural",
       tipo: "Alimento Húmedo",
       precio: "$32.50",
-      imagen: require("../../../../../assets/imagen_comida_perro.png"),
+      imagen: { uri: "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=800&q=85" },
+      marca: "NaturPet", peso: "400 g", edad_recomendada: "Todas las edades", descripcion: "Alimento húmedo de textura suave que ayuda a mantener la hidratación.", ingredientes: "Carne de res, caldo natural, zanahoria y minerales", garantia: "Empaque resellable",
     },
     {
       id: 3,
       nombre: "Snacks Saludables",
       tipo: "Premios y Golosinas",
       precio: "$15.99",
-      imagen: require("../../../../../assets/imagen_comida_perro.png"),
+      imagen: { uri: "https://images.unsplash.com/photo-1558788353-f76d92427f16?auto=format&fit=crop&w=800&q=85" },
+      marca: "Paws Treats", peso: "250 g", edad_recomendada: "Desde 6 meses", descripcion: "Premios horneados para entrenamiento y refuerzo positivo.", ingredientes: "Avena, pollo, camote y aceite de salmón", garantia: "Sin colorantes artificiales",
     },
     {
       id: 4,
       nombre: "Complementos Nutricionales",
       tipo: "Suplementos",
       precio: "$28.00",
-      imagen: require("../../../../../assets/imagen_comida_perro.png"),
+      imagen: { uri: "https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?auto=format&fit=crop&w=800&q=85" },
+      marca: "VitalCan", peso: "120 tabletas", edad_recomendada: "Adultos y senior", descripcion: "Complemento con omega 3 y glucosamina para articulaciones y pelaje.", ingredientes: "Omega 3, glucosamina, condroitina y biotina", garantia: "Dosificación incluida",
     },
   ];
 
@@ -91,6 +95,7 @@ export default function Servicio_Cliente_Comida({ route, navigation }) {
             <View style={styles.productoInfo}>
               <Text style={styles.productoName}>{producto.nombre}</Text>
               <Text style={styles.productoType}>{producto.tipo}</Text>
+              <Text style={styles.productoDescription} numberOfLines={2}>{producto.descripcion}</Text>
             </View>
 
             {/* PRECIO DERECHA */}

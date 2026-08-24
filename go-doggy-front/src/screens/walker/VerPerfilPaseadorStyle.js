@@ -17,6 +17,11 @@ export const styles = StyleSheet.create({
   },
   nameText: { fontSize: ms(24), fontWeight: "bold", color: "#1F2937", marginBottom: vs(6) },
   roleText: { fontSize: ms(14), color: "#4B5563", fontWeight: "600" },
+  ratingRow: { flexDirection: "row", alignItems: "center", marginTop: vs(6), gap: s(7) },
+  ratingStars: { fontSize: ms(20) },
+  starFilled: { color: "#F4B942" },
+  starEmpty: { color: "#CBD5D1" },
+  ratingValue: { fontSize: ms(12), color: "#4B5563", fontWeight: "700" },
   infoCard: {
     backgroundColor: "#99D9C1",
     borderRadius: s(24),

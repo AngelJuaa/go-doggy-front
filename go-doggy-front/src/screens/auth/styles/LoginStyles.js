@@ -27,11 +27,13 @@ export const loginStyles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 4,
   },
+  backButtonPaseador: { borderColor: "#2196F3" },
   backButtonText: {
     fontSize: ms(14),
     color: "#E95295",
     fontWeight: "600",
   },
+  backButtonTextPaseador: { color: "#2196F3" },
   title: { fontSize: ms(42), fontWeight: "bold", color: "#000" },
   subtitle: { fontSize: ms(20), color: "#000" },
   backgroundImage: {
@@ -75,12 +77,13 @@ export const loginStyles = StyleSheet.create({
   eyeButton: { paddingHorizontal: s(10) },
   eyeText: { fontSize: ms(18) },
   loginButton: {
-    backgroundColor: "#7CEDA3",
+    backgroundColor: "#E95295",
     paddingVertical: vs(10),
     borderRadius: s(20),
     alignItems: "center",
     marginTop: vs(15),
   },
+  loginButtonPaseador: { backgroundColor: "#2196F3" },
   buttonText: { fontSize: ms(16), fontWeight: "bold", color: "#333" },
   disabledButton: { backgroundColor: "#ccc" },
   forgotPasswordText: {

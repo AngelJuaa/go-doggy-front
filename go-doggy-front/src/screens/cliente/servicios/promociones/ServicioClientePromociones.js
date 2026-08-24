@@ -39,28 +39,32 @@ export default function Servicio_Cliente_Promociones({ route, navigation }) {
       nombre: "Paseos x 5 - 20% OFF",
       tipo: "Pack de Paseos",
       descuento: "-20%",
-      imagen: require("../../../../../assets/perro1.jpg"),
+      imagen: { uri: "https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=800&q=85" },
+      precio_original: "$175.00", precio_descuento: "$140.00", descripcion: "Paquete de cinco paseos de 30 minutos con paseadores profesionales.", incluye: "Cinco paseos y seguimiento personalizado", validez: "30 días desde la compra", vencimiento: "31 de diciembre de 2026", codigo_promocional: "PASEOS20", condiciones: "No acumulable con otras promociones.",
     },
     {
       id: 2,
       nombre: "Baño + Corte",
       tipo: "Estética Combo",
       descuento: "-15%",
-      imagen: require("../../../../../assets/perro1.jpg"),
+      imagen: { uri: "https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&w=800&q=85" },
+      precio_original: "$80.00", precio_descuento: "$68.00", descripcion: "Combo de higiene y estilo para consentir a tu perro en una sola visita.", incluye: "Baño, secado, corte y perfume", validez: "60 días desde la compra", vencimiento: "31 de diciembre de 2026", codigo_promocional: "BAÑOCORTE15", condiciones: "Sujeto a disponibilidad y tamaño de la mascota.",
     },
     {
       id: 3,
       nombre: "Comida Premium Bundle",
       tipo: "Pack Alimenticio",
       descuento: "-25%",
-      imagen: require("../../../../../assets/perro1.jpg"),
+      imagen: { uri: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&w=800&q=85" },
+      precio_original: "$60.00", precio_descuento: "$45.00", descripcion: "Selección de alimento premium y premios para mantener una rutina nutritiva.", incluye: "Alimento seco, snacks y guía de porciones", validez: "30 días desde la compra", vencimiento: "30 de noviembre de 2026", codigo_promocional: "NUTRI25", condiciones: "Válido en productos participantes.",
     },
     {
       id: 4,
       nombre: "Membresía Mensual",
       tipo: "Acceso Ilimitado",
       descuento: "-30%",
-      imagen: require("../../../../../assets/perro1.jpg"),
+      imagen: { uri: "https://images.unsplash.com/photo-1558788353-f76d92427f16?auto=format&fit=crop&w=800&q=85" },
+      precio_original: "$299.00", precio_descuento: "$209.00", descripcion: "Membresía con beneficios especiales para familias que usan servicios frecuentemente.", incluye: "Descuentos, prioridad de agenda y asesoría básica", validez: "Un mes", vencimiento: "Activación al comprar", codigo_promocional: "CLUB30", condiciones: "Renovación mensual opcional.",
     },
   ];
 
@@ -93,6 +97,7 @@ export default function Servicio_Cliente_Promociones({ route, navigation }) {
             <View style={styles.promocionInfo}>
               <Text style={styles.promocionName}>{promocion.nombre}</Text>
               <Text style={styles.promocionType}>{promocion.tipo}</Text>
+              <Text style={styles.promocionDescription} numberOfLines={2}>{promocion.descripcion}</Text>
             </View>
 
             {/* DESCUENTO DERECHA */}

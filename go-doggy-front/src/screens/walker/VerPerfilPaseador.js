@@ -25,6 +25,15 @@ export default function VerPerfilPaseador({ navigation }) {
       if (data.url_foto_perfil) {
         setUserImage({ uri: `${API_URL}/uploads/${data.url_foto_perfil}` });
       }
+
+      if (data.paseador_id) {
+        fetch(`${API_URL}/paseador/${data.paseador_id}`)
+          .then((response) => response.ok ? response.json() : null)
+          .then((perfilActualizado) => {
+            if (perfilActualizado) setPerfil((actual) => ({ ...actual, ...perfilActualizado }));
+          })
+          .catch((error) => console.warn("No se pudo cargar la calificación del paseador", error));
+      }
     } catch (error) {
       console.warn("No se pudo parsear paseador almacenado", error);
     }
@@ -45,6 +54,16 @@ export default function VerPerfilPaseador({ navigation }) {
           <Image source={userImage} style={styles.profileImage} />
           <Text style={styles.nameText}>{fullName}</Text>
           <Text style={styles.roleText}>Paseador</Text>
+          <View style={styles.ratingRow}>
+            <Text style={styles.ratingStars}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Text key={star} style={star <= Math.round(Number(perfil.calificacion_promedio) || 0) ? styles.starFilled : styles.starEmpty}>★</Text>
+              ))}
+            </Text>
+            <Text style={styles.ratingValue}>
+              {Number(perfil.calificacion_promedio) > 0 ? Number(perfil.calificacion_promedio).toFixed(1) : "Sin calificaciones"}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.infoCard}>

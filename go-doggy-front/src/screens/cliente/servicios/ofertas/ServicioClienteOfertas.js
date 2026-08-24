@@ -39,28 +39,32 @@ export default function Servicio_Cliente_Ofertas({ route, navigation }) {
       nombre: "Alimento Premium - 50% OFF",
       tipo: "Flash Sale",
       precio: "$22.99",
-      imagen: require("../../../../../assets/perro1.jpg"),
+      imagen: { uri: "https://images.unsplash.com/photo-1568640347023-a616a30bc3bd?auto=format&fit=crop&w=800&q=85" },
+      precio_original: "$45.99", descripcion: "Alimento premium para perros adultos con proteína de calidad y nutrientes esenciales.", especificaciones: "15 kg, receta con pollo y arroz", stock_disponible: "12 unidades", duracion_oferta: "Válida hasta el 31 de diciembre de 2026", tiempo_restante: "Disponible por tiempo limitado", beneficios: "Vitaminas, minerales y grasas saludables", envio_rapido: "Envío express en 24 a 48 horas",
     },
     {
       id: 2,
       nombre: "Correa + Collar Bundle",
       tipo: "Super Oferta",
       precio: "$39.99",
-      imagen: require("../../../../../assets/perro1.jpg"),
+      imagen: { uri: "https://images.unsplash.com/photo-1591946614720-90a587da4a36?auto=format&fit=crop&w=800&q=85" },
+      precio_original: "$54.99", descripcion: "Set coordinado para paseos diarios con ajuste cómodo y cierre seguro.", especificaciones: "Correa de nylon, collar ajustable y broche metálico", stock_disponible: "8 paquetes", duracion_oferta: "Válida hasta agotar existencias", tiempo_restante: "Pocas unidades disponibles", beneficios: "Ahorro en dos accesorios esenciales", envio_rapido: "Envío express en 24 a 48 horas",
     },
     {
       id: 3,
       nombre: "Paseo Gratis - Referral",
       tipo: "Programa de Referencia",
       precio: "GRATIS",
-      imagen: require("../../../../../assets/perro1.jpg"),
+      imagen: { uri: "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=800&q=85" },
+      precio_original: "$30.00", descripcion: "Obtén un paseo sin costo al invitar a una nueva familia a GoDoggy.", especificaciones: "Paseo de 30 minutos", stock_disponible: "Cupo limitado", duracion_oferta: "Válida durante la campaña vigente", tiempo_restante: "Consulta disponibilidad", beneficios: "Un paseo gratis por referencia aprobada", envio_rapido: "Servicio digital, sin envío",
     },
     {
       id: 4,
       nombre: "Kit Completo Cuidado",
       tipo: "Mega Descuento",
       precio: "$69.99",
-      imagen: require("../../../../../assets/perro1.jpg"),
+      imagen: { uri: "https://images.unsplash.com/photo-1601758174114-e711c0c4baa0?auto=format&fit=crop&w=800&q=85" },
+      precio_original: "$99.99", descripcion: "Kit práctico para cubrir alimentación, paseo, descanso y entretenimiento.", especificaciones: "Comedero, correa, juguete y manta", stock_disponible: "6 kits", duracion_oferta: "Válida hasta el 31 de diciembre de 2026", tiempo_restante: "Oferta limitada", beneficios: "Ahorro y artículos esenciales en un solo paquete", envio_rapido: "Envío express en 24 a 48 horas",
     },
   ];
 
@@ -91,6 +95,7 @@ export default function Servicio_Cliente_Ofertas({ route, navigation }) {
             <View style={styles.ofertaInfo}>
               <Text style={styles.ofertaName}>{oferta.nombre}</Text>
               <Text style={styles.ofertaType}>{oferta.tipo}</Text>
+              <Text style={styles.ofertaDescription} numberOfLines={2}>{oferta.descripcion}</Text>
             </View>
 
             {/* PRECIO DERECHA */}

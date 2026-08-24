@@ -1,0 +1,32 @@
+import { StyleSheet } from "react-native";
+import { s, vs, ms, hp } from "../../../utils/responsive";
+
+export const styles = StyleSheet.create({
+	container: { flex: 1, backgroundColor: "#F5F5F0" },
+	header: { flex: 0.7, paddingTop: vs(40), zIndex: 2 },
+	backgroundImage: { position: "absolute", top: 0, left: 0, right: 0, width: "100%", height: hp(65), resizeMode: "cover", zIndex: 1 },
+	backButton: { position: "absolute", top: vs(50), left: s(20), zIndex: 10, backgroundColor: "rgba(255,255,255,0.92)", borderRadius: s(20), borderWidth: 1, paddingVertical: vs(8), paddingHorizontal: s(12) },
+	backButtonCliente: { borderColor: "#E95295" },
+	backButtonPaseador: { borderColor: "#2196F3" },
+	backText: { fontSize: ms(14), fontWeight: "600" },
+	backTextCliente: { color: "#E95295" },
+	backTextPaseador: { color: "#2196F3" },
+	card: { flex: 0.8, backgroundColor: "rgba(245, 239, 218, 0.98)", marginHorizontal: s(40), marginBottom: vs(50), borderRadius: s(40), padding: s(20), justifyContent: "center", elevation: 10, zIndex: 3 },
+	title: { fontSize: ms(25), fontWeight: "bold", color: "#000", textAlign: "center" },
+	message: { fontSize: ms(14), color: "#555", textAlign: "center", marginTop: vs(14), lineHeight: ms(20) },
+	successIcon: { fontSize: ms(60), textAlign: "center", marginBottom: vs(12) },
+	successMessage: { fontSize: ms(16), color: "#333", textAlign: "center", marginTop: vs(10), fontWeight: "500", lineHeight: ms(22) },
+	inputGroup: { marginTop: vs(24) },
+	label: { fontSize: ms(14), color: "#555", marginBottom: vs(2) },
+	passwordContainer: { flexDirection: "row", alignItems: "center", borderBottomWidth: 1, borderBottomColor: "#000", minHeight: vs(44) },
+	passwordInput: { flex: 1, fontSize: ms(18), paddingVertical: vs(6), color: "#000" },
+	eyeButton: { paddingHorizontal: s(8), justifyContent: "center", alignItems: "center" },
+	eyeIcon: { fontSize: ms(20) },
+	requirements: { fontSize: ms(11), color: "#888", marginTop: vs(6), lineHeight: ms(16) },
+	error: { color: "#c62828", fontSize: ms(12), textAlign: "center", marginTop: vs(8) },
+	primaryButton: { paddingVertical: vs(10), borderRadius: s(20), alignItems: "center", marginTop: vs(22) },
+	clienteButton: { backgroundColor: "#E95295" },
+	paseadorButton: { backgroundColor: "#2196F3" },
+	disabledButton: { backgroundColor: "#BDBDBD" },
+	buttonText: { fontSize: ms(16), fontWeight: "bold", color: "#fff" },
+});

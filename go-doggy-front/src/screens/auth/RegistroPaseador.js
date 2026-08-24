@@ -148,9 +148,9 @@ export default function RegistroPaseador({ navigation }) {
       const data = await response.json();
 
       if (response.ok) {
-        // Redirección automática al Login sin mostrar alert
-        navigation.navigate("Login", {
+        navigation.navigate("VerificacionClientePaseador", {
           tipo: "paseador",
+          correo: correo.trim(),
         });
       } else {
         Alert.alert("Error", data.message || "Error al registrar");

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,41 +6,19 @@ import {
   TouchableOpacity,
   ScrollView,
 } from "react-native";
-
-const NOTIFICACIONES = [
-  {
-    id: 1,
-    iconColor: "#E53935",
-    iconText: "!",
-    titulo: "Mascotas extraviadas",
-    fecha: "17 Diciembre 2025",
-    subtitulo: "Lo nuevo del momento",
-    descripcion:
-      "Se han reportado mascotas extraviadas en tu zona. Mantente alerta y reporta cualquier avistamiento a las autoridades o refugios cercanos. La colaboración de todos es clave para recuperarlas.\n\nSi encuentras una mascota perdida, revisa si tiene identificación y contacta al dueño. En caso de no tener, llévala a un refugio local o publícalo en redes sociales.\n\nRecuerda que cada mascota es parte de una familia que la extraña y necesita tu ayuda para regresar a casa.",
-  },
-  {
-    id: 2,
-    iconColor: "#FFC107",
-    iconText: "⭐",
-    titulo: "Nueva calificacion",
-    fecha: "17 Diciembre 2025",
-    subtitulo: "Lo nuevo del momento",
-    descripcion:
-      "Has recibido una nueva calificación de parte de tu cliente. Revisa los comentarios y continúa brindando un excelente servicio.\n\nLas calificaciones son esenciales para que más dueños confíen en ti. Responde con amabilidad y agradece los comentarios recibidos.\n\nSigue así y pronto serás uno de los paseadores mejor valorados de la plataforma. ¡Gracias por tu dedicación!",
-  },
-  {
-    id: 3,
-    iconColor: "#1565C0",
-    iconText: "💬",
-    titulo: "Nuevo Comentario",
-    fecha: "17 Diciembre 2025",
-    subtitulo: "Lo nuevo del momento",
-    descripcion:
-      "Un cliente ha dejado un nuevo comentario en tu perfil de paseador. Accede para leerlo y responderlo si lo deseas.\n\nLos comentarios te ayudan a mejorar y construir una reputación sólida dentro de la comunidad GoDoggy.\n\nNo olvides revisar periódicamente tu perfil para mantenerte al día con las opiniones de tus clientes y ofrecer siempre la mejor experiencia.",
-  },
-];
+import storage from "../../utils/storage";
+import { getWalkerNotifications, WALKER_NOTIFICATIONS_KEY } from "../../utils/walkerNotifications";
 
 export default function NotificacionesPaseador({ navigation }) {
+  const [notificaciones, setNotificaciones] = useState(getWalkerNotifications());
+
+  React.useEffect(() => {
+    const actualizar = () => setNotificaciones(getWalkerNotifications());
+    storage.subscribe(WALKER_NOTIFICATIONS_KEY, actualizar);
+    actualizar();
+    return () => storage.unsubscribe(WALKER_NOTIFICATIONS_KEY, actualizar);
+  }, []);
+
   return (
     <View style={styles.container}>
 
@@ -57,13 +35,15 @@ export default function NotificacionesPaseador({ navigation }) {
 
       {/* LISTA */}
       <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
-        {NOTIFICACIONES.map((n) => (
+        {notificaciones.length === 0 ? (
+          <Text style={styles.empty}>No tienes notificaciones todavía.</Text>
+        ) : notificaciones.map((n) => (
           <View key={n.id}>
             <View style={styles.divider} />
             <TouchableOpacity
               style={styles.item}
               onPress={() =>
-                navigation.navigate("NotificacionDetalle", { notificacion: n })
+                navigation.navigate("NotificacionDetalle", { notificacion: n, role: "paseador" })
               }
             >
               {/* Ícono circular */}
@@ -190,6 +170,7 @@ const styles = StyleSheet.create({
     color: "#555",
     fontWeight: "500",
   },
+  empty: { textAlign: "center", color: "#666", fontSize: 14, paddingVertical: 40 },
 
   arrow: {
     fontSize: 14,

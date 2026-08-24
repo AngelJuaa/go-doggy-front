@@ -1,81 +1,65 @@
-import React, { useMemo, useState, useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Platform, ActivityIndicator } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
 import { s, vs, ms } from "../../../utils/responsive";
+import { API_URL } from "../../../utils/api";
 import storage from "../../../utils/storage";
-import { apiFetch } from "../../../utils/api";
 import { BottomTab } from "./GananciasDetalle";
 
 const BG = "#F2EDD8";
 
 export default function EstrellasDetalle({ navigation }) {
-  const [estrellas, setEstrellas] = useState({ total: 0, max: 0, pct: 0 });
+  const [calificacion, setCalificacion] = useState({ total: 0, resenas: 0, categorias: {} });
   const [loading, setLoading]     = useState(true);
 
   useEffect(() => {
-    const u = JSON.parse(storage.getItem("usuario") || "{}");
-    if (u.usuario_id) {
-      apiFetch(`/ganancias/${u.usuario_id}`)
-        .then(d => {
-          const total = parseInt(d.total_estrellas || 0);
-          const max   = parseInt(d.max_estrellas   || 0) || 200; // fallback a 200
-          const pct   = max > 0 ? ((total / max) * 100).toFixed(1) : 0;
-          setEstrellas({ total, max, pct });
-        })
-        .catch(() => {})
-        .finally(() => setLoading(false));
-    } else { setLoading(false); }
+    let perfil = {};
+    try {
+      perfil = JSON.parse(storage.getItem("paseador") || "{}");
+    } catch (error) {
+      perfil = {};
+    }
+    const paseadorId = Number(perfil.paseador_id || perfil.usuario_id || perfil.id || 0);
+    if (!paseadorId) {
+      setLoading(false);
+      return;
+    }
+
+    fetch(`${API_URL}/paseador/${paseadorId}/calificaciones`)
+      .then((response) => response.ok ? response.json() : [])
+      .then((resenas) => {
+        const lista = Array.isArray(resenas) ? resenas : [];
+        const promedios = lista.map((resena) => Number(resena.promedio) || 0).filter(Boolean);
+        const categorias = {};
+        const conteos = {};
+        lista.forEach((resena) => {
+          Object.entries(resena.categorias || {}).forEach(([categoria, valor]) => {
+            const numero = Number(valor);
+            if (!Number.isFinite(numero)) return;
+            categorias[categoria] = (categorias[categoria] || 0) + numero;
+            conteos[categoria] = (conteos[categoria] || 0) + 1;
+          });
+        });
+        Object.keys(categorias).forEach((categoria) => {
+          categorias[categoria] = conteos[categoria] ? categorias[categoria] / conteos[categoria] : 0;
+        });
+        setCalificacion({
+          total: promedios.length ? promedios.reduce((sum, value) => sum + value, 0) / promedios.length : 0,
+          resenas: lista.length,
+          categorias,
+        });
+      })
+      .catch(() => setCalificacion({ total: 0, resenas: 0, categorias: {} }))
+      .finally(() => setLoading(false));
   }, []);
 
-  const chartHtml = useMemo(() => `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8"/>
-  <style>
-    html,body{margin:0;padding:16px;background:#fff;
-      display:flex;align-items:center;justify-content:center;
-      flex-direction:column;box-sizing:border-box;height:100vh;}
-    .label{font-family:sans-serif;font-size:13px;color:#555;margin-bottom:12px;text-align:center;}
-    .center{position:relative;width:200px;height:200px;}
-    canvas{position:absolute;top:0;left:0;}
-    .info{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-      text-align:center;pointer-events:none;}
-    .fraction{font-size:20px;font-weight:800;color:#F5C518;font-family:sans-serif;}
-    .pctTxt{font-size:13px;color:#888;font-family:sans-serif;}
-  </style>
-</head>
-<body>
-  <div class="label">Progreso de Estrellas Obtenidas</div>
-  <div class="center">
-    <canvas id="c" width="200" height="200"></canvas>
-    <div class="info">
-      <div class="fraction">${estrellas.total}/${estrellas.max}</div>
-      <div class="pctTxt">(${estrellas.pct}%)</div>
-    </div>
-  </div>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script>
-    const pct   = ${estrellas.pct};
-    const rest  = 100 - pct;
-    new Chart(document.getElementById('c'), {
-      type: 'doughnut',
-      data: {
-        datasets:[{
-          data: [pct, rest],
-          backgroundColor: ['#F5C518', '#E0E0E0'],
-          borderWidth: 0,
-          borderRadius: 8,
-        }]
-      },
-      options:{
-        cutout: '72%',
-        responsive: false,
-        plugins:{ legend:{display:false}, tooltip:{enabled:false} },
-        animation:{ animateRotate:true, duration:800 }
-      }
-    });
-  </script>
-</body>
-</html>`, [estrellas]);
+  const mensaje = calificacion.total >= 4.5
+    ? "Excelente trabajo, nunca cambies"
+    : calificacion.total >= 4
+    ? "Vas excelente pero puedes ir mejor"
+    : calificacion.total >= 3.5
+    ? "Es algo bajo pero puedes mejorar"
+    : "Santa cachucha, estás grave, debes mejorar";
+  const categorias = ["General", "Eficiente", "Amabilidad", "Confianza", "Comunicacion"];
 
   return (
     <View style={styles.container}>
@@ -88,27 +72,32 @@ export default function EstrellasDetalle({ navigation }) {
         <Text style={styles.headerTitle}>Calificaciones</Text>
       </View>
 
-      <View style={styles.body}>
+      <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
         {loading ? (
           <ActivityIndicator size="large" color="#F5C518" style={{marginTop:vs(40)}} />
         ) : (
           <>
-            <Text style={styles.sectionTitle}>Calificacion personal</Text>
-
-            <View style={styles.chartCard}>
-              {Platform.OS === "web" ? (
-                <iframe title="estrellas-chart" srcDoc={chartHtml} sandbox="allow-scripts"
-                  style={{width:"100%",height:"100%",border:"none"}} />
-              ) : (
-                <View style={styles.fallback}>
-                  <Text style={styles.fallbackFrac}>{estrellas.total}/{estrellas.max}</Text>
-                  <Text style={styles.fallbackPct}>({estrellas.pct}%)</Text>
-                </View>
-              )}
+            <Text style={styles.sectionTitle}>Calificación total</Text>
+            <View style={styles.totalCard}>
+              <Text style={styles.totalValue}>{calificacion.total ? calificacion.total.toFixed(1) : "0.0"}</Text>
+              <Text style={styles.totalStars}>{"★".repeat(Math.round(calificacion.total))}<Text style={styles.emptyStars}>{"★".repeat(Math.max(0, 5 - Math.round(calificacion.total)))}</Text></Text>
+              <Text style={styles.reviewCount}>{calificacion.resenas} reseña{calificacion.resenas === 1 ? "" : "s"}</Text>
             </View>
+            <Text style={styles.message}>{mensaje}</Text>
+            <Text style={styles.categoryTitle}>Promedio por categoría</Text>
+            {categorias.map((categoria) => {
+              const promedio = Number(calificacion.categorias[categoria]) || 0;
+              return (
+                <View key={categoria} style={styles.categoryRow}>
+                  <Text style={styles.categoryName}>{categoria}</Text>
+                  <Text style={styles.categoryStars}>{"★".repeat(Math.round(promedio))}<Text style={styles.emptyStars}>{"★".repeat(Math.max(0, 5 - Math.round(promedio)))}</Text></Text>
+                  <Text style={styles.categoryValue}>{promedio.toFixed(1)}</Text>
+                </View>
+              );
+            })}
           </>
         )}
-      </View>
+      </ScrollView>
 
       <BottomTab navigation={navigation} />
     </View>
@@ -126,11 +115,17 @@ const styles = StyleSheet.create({
   emoji:        { fontSize:ms(32) },
   headerTitle:  { fontSize:ms(22), fontFamily:"serif", fontWeight:"600", color:"#1A1A1A" },
   body:         { flex:1, paddingHorizontal:s(20), paddingTop:vs(20) },
+  bodyContent:  { paddingBottom:vs(100) },
   sectionTitle: { fontSize:ms(18), fontWeight:"800", color:"#1A1A1A", textAlign:"center", marginBottom:vs(16) },
-  chartCard:    { flex:1, backgroundColor:"#fff", borderRadius:s(16), overflow:"hidden",
-                  elevation:3, shadowColor:"#000", shadowOpacity:0.08, shadowRadius:8, shadowOffset:{width:0,height:4},
-                  marginBottom:vs(10) },
-  fallback:     { flex:1, alignItems:"center", justifyContent:"center" },
-  fallbackFrac: { fontSize:ms(32), fontWeight:"800", color:"#F5C518" },
-  fallbackPct:  { fontSize:ms(16), color:"#888", marginTop:vs(4) },
+  totalCard:    { backgroundColor:"#fff", borderRadius:s(16), paddingVertical:vs(18), alignItems:"center", elevation:3, marginBottom:vs(14) },
+  totalValue:   { fontSize:ms(38), fontWeight:"800", color:"#1A1A1A" },
+  totalStars:   { fontSize:ms(27), color:"#F5C518", letterSpacing: 1 },
+  emptyStars:   { color:"#D8D8D8" },
+  reviewCount:  { fontSize:ms(12), color:"#777", marginTop:vs(5) },
+  message:      { backgroundColor:"#99D9C1", borderRadius:s(12), padding:s(14), color:"#1A1A1A", fontSize:ms(14), fontWeight:"700", textAlign:"center", marginBottom:vs(20) },
+  categoryTitle:{ fontSize:ms(17), fontWeight:"800", color:"#1A1A1A", marginBottom:vs(10) },
+  categoryRow:  { flexDirection:"row", alignItems:"center", backgroundColor:"#fff", borderRadius:s(10), padding:s(12), marginBottom:vs(8), elevation:1 },
+  categoryName: { flex:1, fontSize:ms(14), fontWeight:"700", color:"#333" },
+  categoryStars:{ fontSize:ms(16), color:"#F5C518" },
+  categoryValue:{ width:s(30), textAlign:"right", fontSize:ms(13), fontWeight:"800", color:"#555" },
 });

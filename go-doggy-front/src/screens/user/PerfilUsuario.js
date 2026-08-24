@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect } from "react";
 import { View, Text, Image, TouchableOpacity, ScrollView, Alert } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { styles } from "./styles/PerfilUsuarioStyles";
 import { s, vs, ms } from "../../utils/responsive";
 import storage from "../../utils/storage";
@@ -12,29 +13,59 @@ export default function PerfilUsuario({ navigation }) {
   );
   const [hoveredTab, setHoveredTab] = useState(null);
 
-  useEffect(() => {
-    const usuarioStr = storage.getItem("usuario");
-    if (usuarioStr) {
+  const cargarPerfilCliente = () => {
+    try {
+      const activeRole = storage.getItem("active_role");
+      const usuarioStr = storage.getItem("usuario");
+
+      if (activeRole !== "cliente" || !usuarioStr) {
+        setUserName("Usuario");
+        setUserImage(require("../../../assets/perfil.png"));
+        return;
+      }
+
       const usuario = JSON.parse(usuarioStr);
-      const nombreCompleto = usuario.nombre_completo.split(" ");
+      const nombreCompleto = String(usuario?.nombre_completo || "").trim().split(" ");
       const primerNombre = nombreCompleto[0] || "Usuario";
       const primerApellido = nombreCompleto[1] || "";
       setUserName(`${primerNombre} ${primerApellido}`.trim());
-      if (usuario.url_foto_perfil) {
+
+      if (usuario?.url_foto_perfil) {
         setUserImage({
           uri: `${API_URL}/uploads/${usuario.url_foto_perfil}`,
         });
+      } else {
+        setUserImage(require("../../../assets/perfil.png"));
       }
+    } catch (error) {
+      setUserName("Usuario");
+      setUserImage(require("../../../assets/perfil.png"));
     }
+  };
+
+  useEffect(() => {
+    cargarPerfilCliente();
+    storage.subscribe("usuario", cargarPerfilCliente);
+    storage.subscribe("active_role", cargarPerfilCliente);
+
+    return () => {
+      storage.unsubscribe("usuario", cargarPerfilCliente);
+      storage.unsubscribe("active_role", cargarPerfilCliente);
+    };
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      cargarPerfilCliente();
+    }, []),
+  );
   const opciones = [
     {
       id: 1,
-      nombre: "Editar perfil",
+      nombre: "Ver perfil",
       icon: "👤",
       screen: "EditarPerfilUsuario",
     },
-    { id: 2, nombre: "Editar mascota", icon: "🐾", screen: "EditarMascota" },
     { id: 3, nombre: "Calificaciones", icon: "📋", screen: "Calificaciones" },
     { id: 4, nombre: "Billetera", icon: "💼", screen: "BilleteraUsuario" },
     { id: 5, nombre: "Seguridad", icon: "🛡️", screen: "SeguridadUsuario" },
@@ -46,13 +77,15 @@ export default function PerfilUsuario({ navigation }) {
       icon: "⚙️",
       screen: "ConfiguracionUsuario",
     },
-    { id: 8, nombre: "Legal", icon: "⚖️", screen: "LegalUsuario" },
+    { id: 8, nombre: "Legal", icon: "⚖️", screen: "LegalCliente" },
     { id: 9, nombre: "Cerrar sesion", icon: "🚪", screen: "Login" },
   ];
 
   const handlePress = (opcion) => {
     if (opcion.screen) {
       if (opcion.id === 9) {
+        storage.removeItem("usuario");
+        storage.removeItem("active_role");
         navigation.reset({
           index: 0,
           routes: [{ name: "Login" }],

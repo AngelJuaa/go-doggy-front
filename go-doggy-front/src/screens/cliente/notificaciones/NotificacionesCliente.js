@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,42 +7,20 @@ import {
   Image,
 } from "react-native";
 import { styles } from "./NotificacionesClienteStyles";
-
-const NOTIFICACIONES_CLIENTE = [
-  {
-    id: 1,
-    iconColor: "#1E88E5",
-    iconText: "📣",
-    titulo: "Paseo confirmado",
-    fecha: "24 Junio 2026",
-    subtitulo: "Tu paseo fue aceptado",
-    descripcion:
-      "Tu paseador ya está en camino. Revisa el mapa en tiempo real y mantente listo para recibirlo en la ubicación acordada.",
-  },
-  {
-    id: 2,
-    iconColor: "#43A047",
-    iconText: "✅",
-    titulo: "Paseo finalizado",
-    fecha: "24 Junio 2026",
-    subtitulo: "¡Gracias por confiar en GoDoggy!",
-    descripcion:
-      "El paseo ha terminado con éxito. Puedes calificar al paseador y dejar tus comentarios para mejorar el servicio.",
-  },
-  {
-    id: 3,
-    iconColor: "#FB8C00",
-    iconText: "💬",
-    titulo: "Mensaje del paseador",
-    fecha: "23 Junio 2026",
-    subtitulo: "Actualización en tu servicio",
-    descripcion:
-      "Tu paseador te ha enviado un mensaje con un detalle importante sobre el paseo. Revísalo para continuar con la comunicación.",
-  },
-];
+import storage from "../../../utils/storage";
+import { CLIENT_NOTIFICATIONS_KEY, getClientNotifications } from "../../../utils/clientNotifications";
 
 export default function NotificacionesCliente({ navigation }) {
   const [hoveredTab, setHoveredTab] = useState(null);
+  const [notificaciones, setNotificaciones] = useState(getClientNotifications());
+
+  useEffect(() => {
+    const actualizarNotificaciones = () => setNotificaciones(getClientNotifications());
+    storage.subscribe(CLIENT_NOTIFICATIONS_KEY, actualizarNotificaciones);
+    actualizarNotificaciones();
+
+    return () => storage.unsubscribe(CLIENT_NOTIFICATIONS_KEY, actualizarNotificaciones);
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -63,7 +41,11 @@ export default function NotificacionesCliente({ navigation }) {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {NOTIFICACIONES_CLIENTE.map((item) => (
+        {notificaciones.length === 0 ? (
+          <Text style={{ color: "#666", textAlign: "center", marginTop: 24 }}>
+            No tienes notificaciones todavía.
+          </Text>
+        ) : notificaciones.map((item) => (
           <TouchableOpacity
             key={item.id}
             style={styles.item}

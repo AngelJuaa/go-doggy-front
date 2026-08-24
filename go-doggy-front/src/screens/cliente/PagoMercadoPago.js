@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, Alert, Linking, StyleSheet, Platform, Image, ScrollView } from "react-native";
 import { s, vs, ms } from "../../utils/responsive";
 import { API_URL } from "../../utils/api";
+import storage from "../../utils/storage";
+
+const RESEÑA_PENDIENTE_KEY = "resena_paseador_pendiente";
 
 const buildMercadoPagoUrl = ({ servicioId, tarifa_base_hora, tipo_servicio, duracion_minutos }) => {
   const monto = Number(tarifa_base_hora);
@@ -17,12 +20,17 @@ export default function PagoMercadoPago({ route, navigation }) {
   const {
     servicioId: servicioIdParam,
     servicio_id,
+    paseadorId,
     tarifa_base_hora,
     tipo_servicio,
     duracion_minutos,
     notas_dueno,
+    tipoCobro,
+    distanciaMetros,
+    montoAdicional,
   } = route?.params || {};
   const servicioId = Number(servicioIdParam || servicio_id || 0) || null;
+  const esSegundoCobro = tipoCobro === "distancia";
   const tarifa = Number(tarifa_base_hora);
   const formattedTarifa = Number.isFinite(tarifa) ? tarifa.toFixed(2) : tarifa_base_hora;
   const mercadoPagoUrl = buildMercadoPagoUrl({ servicioId, tarifa_base_hora, tipo_servicio, duracion_minutos });
@@ -34,6 +42,13 @@ export default function PagoMercadoPago({ route, navigation }) {
     navigation.reset({
       index: 0,
       routes: [{ name: "MapaCliente", params: { servicioId } }],
+    });
+  };
+
+  const goToInicioCliente = () => {
+    navigation.reset({
+      index: 0,
+      routes: [{ name: "ReseñaAPaseadorDeCliente", params: { servicioId, paseadorId: route?.params?.paseadorId } }],
     });
   };
 
@@ -72,6 +87,16 @@ export default function PagoMercadoPago({ route, navigation }) {
 
     setLoading(true);
     try {
+      if (esSegundoCobro) {
+        storage.setItem(RESEÑA_PENDIENTE_KEY, JSON.stringify({
+          servicioId,
+          paseadorId: route?.params?.paseadorId || null,
+        }));
+        Alert.alert("Pago confirmado", "El paseo ha concluido, gracias por su preferencia.");
+        goToInicioCliente();
+        return;
+      }
+
       const response = await fetch(`${API_URL}/servicio/${servicioId}/iniciar`, {
         method: "PUT",
       });
@@ -122,10 +147,15 @@ export default function PagoMercadoPago({ route, navigation }) {
 
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Pago con Mercado Pago</Text>
-        <Text style={styles.subtitle}>Monto a pagar</Text>
+        <Text style={styles.subtitle}>{esSegundoCobro ? "Cobro final del paseo" : "Monto a pagar"}</Text>
         <Text style={styles.amount}>${formattedTarifa || "0.00"}</Text>
         <Text style={styles.details}>Servicio: {tipo_servicio || "Paseo"}</Text>
-        <Text style={styles.details}>Duración: {duracion_minutos ? `${duracion_minutos} minutos` : "N/A"}</Text>
+        {esSegundoCobro ? (
+          <Text style={styles.details}>Distancia recorrida: {Number(distanciaMetros || 0)} metros</Text>
+        ) : (
+          <Text style={styles.details}>Duración: {duracion_minutos ? `${duracion_minutos} minutos` : "N/A"}</Text>
+        )}
+        {esSegundoCobro ? <Text style={styles.details}>Monto por distancia: ${Number(montoAdicional || 0).toFixed(2)}</Text> : null}
         {notas_dueno ? <Text style={styles.details}>Notas: {notas_dueno}</Text> : null}
 
         <TouchableOpacity
@@ -137,7 +167,7 @@ export default function PagoMercadoPago({ route, navigation }) {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.secondaryButton} onPress={confirmarPagoYVolver} disabled={loading}>
-          <Text style={styles.secondaryButtonText}>{loading ? "Confirmando pago..." : "Volver y confirmar pago"}</Text>
+          <Text style={styles.secondaryButtonText}>{loading ? "Confirmando pago..." : "Terminé el pago, continuar"}</Text>
         </TouchableOpacity>
         <Text style={styles.notice}>
           {Platform.OS === "web"

@@ -50,6 +50,7 @@ export const styles = StyleSheet.create({
   servicioInfo: { flex: 1, justifyContent: "center" },
   servicioName: { fontSize: ms(17), fontWeight: "bold", color: "#333", marginBottom: vs(4) },
   servicioType: { fontSize: ms(12), color: "#666", fontWeight: "600" },
+  servicioDescription: { fontSize: ms(11), color: "#777", marginTop: vs(2), lineHeight: vs(15) },
   empresa: { fontSize: ms(11), color: "#99D9C1", fontWeight: "bold", marginTop: vs(3) },
   bottomTab: {
     flexDirection: "row",

@@ -9,9 +9,9 @@ export default function PerfilPaseador({ navigation }) {
   const [userImage, setUserImage] = useState(require("../../../assets/perfil.png"));
 
   useEffect(() => {
+    const activeRole = storage.getItem("active_role");
     const paseadorStr = storage.getItem("paseador");
-    const usuarioStr = storage.getItem("usuario");
-    const dataStr = paseadorStr || usuarioStr;
+    const dataStr = activeRole === "paseador" ? paseadorStr : null;
 
     if (dataStr) {
       const usuario = JSON.parse(dataStr);
@@ -41,18 +41,24 @@ export default function PerfilPaseador({ navigation }) {
   const opciones = [
     { id: 1, nombre: "Ver perfil", icon: "👤", screen: "VerPerfilPaseador" },
     { id: 2, nombre: "Historial paseos", icon: "📋", screen: "PaseosPaseador" },
-    { id: 3, nombre: "Calificaciones", icon: "⭐", screen: "Calificaciones" },
+    { id: 3, nombre: "Calificaciones", icon: "⭐", screen: "EstrellasDetalle" },
     { id: 4, nombre: "Gráficas", icon: "📊", screen: "GananciasPaseador" },
     { id: 5, nombre: "Seguridad", icon: "🛡️", screen: "SeguridadUsuario" },
     { id: 6, nombre: "Ayuda", icon: "❓", screen: null },
     { id: 7, nombre: "Configuraciones", icon: "⚙️", screen: "ConfiguracionUsuario" },
-    { id: 8, nombre: "Legal", icon: "⚖️", screen: "LegalUsuario" },
+    { id: 8, nombre: "Legal", icon: "⚖️", screen: "LegalPaseador" },
     { id: 9, nombre: "Cerrar sesión", icon: "🚪", screen: "Login" },
   ];
 
   const handlePress = (op) => {
-    if (op.id === 8) {
-      navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+    if (op.id === 9) {
+      storage.removeItem("paseador");
+      storage.removeItem("usuario");
+      storage.removeItem("active_role");
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Login", params: { tipo: "paseador" } }],
+      });
     } else if (op.screen) {
       navigation.navigate(op.screen);
     }

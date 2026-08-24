@@ -13,6 +13,7 @@ import { API_URL } from "../../utils/api";
 export default function MascotaDetalles({ route, navigation }) {
   const { mascota } = route.params;
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [hoveredTab, setHoveredTab] = useState(null);
   const tipoMascota = mascota.tipo_mascota || mascota.tipoMascota || "Sin registro";
 
@@ -102,8 +103,7 @@ export default function MascotaDetalles({ route, navigation }) {
       }
 
       if (response.ok) {
-        alert("Éxito: Mascota eliminada correctamente");
-        navigation.goBack();
+        setShowSuccess(true);
       } else {
         alert(
           `Error ${response.status}: ${data.message || "Error desconocido"}`,
@@ -238,6 +238,23 @@ export default function MascotaDetalles({ route, navigation }) {
                 <Text style={styles.buttonText}>Eliminar</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      )}
+
+      {showSuccess && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Mascota eliminada</Text>
+            <Text style={styles.modalMessage}>
+              La mascota se eliminó correctamente.
+            </Text>
+            <TouchableOpacity
+              style={styles.confirmButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Text style={styles.buttonText}>Aceptar</Text>
+            </TouchableOpacity>
           </View>
         </View>
       )}

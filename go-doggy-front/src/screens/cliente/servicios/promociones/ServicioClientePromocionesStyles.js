@@ -50,6 +50,7 @@ export const styles = StyleSheet.create({
   promocionInfo: { flex: 1, justifyContent: "center" },
   promocionName: { fontSize: ms(17), fontWeight: "bold", color: "#333", marginBottom: vs(6) },
   promocionType: { fontSize: ms(13), color: "#666", fontWeight: "600" },
+  promocionDescription: { fontSize: ms(11), color: "#777", marginTop: vs(2), lineHeight: vs(15) },
   descuento: { fontSize: ms(17), fontWeight: "bold", color: "#dc3545", marginLeft: s(10) },
   bottomTab: {
     flexDirection: "row",

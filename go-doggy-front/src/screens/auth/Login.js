@@ -6,7 +6,8 @@ import storage from "../../utils/storage";
 import { API_URL } from "../../utils/api";
 
 export default function Login({ route, navigation }) {
-  const { tipo } = route.params || { tipo: "cliente" };
+  const tipo = route?.params?.tipo === "paseador" ? "paseador" : "cliente";
+  const esPaseador = tipo === "paseador";
 
   // 🎯 Estados
   const [showPassword, setShowPassword] = useState(false);
@@ -140,16 +141,14 @@ export default function Login({ route, navigation }) {
     <View style={styles.container}>
       {/* 🔙 Botón Volver */}
       <TouchableOpacity 
-        style={styles.backButton} 
+        style={[styles.backButton, esPaseador && styles.backButtonPaseador]}
         onPress={() => {
-          if (navigation.canGoBack()) {
-            navigation.goBack();
-          } else {
-            navigation.navigate("Welcome");
-          }
+          navigation.navigate("WelcomePregunta");
         }}
       >
-        <Text style={styles.backButtonText}>← Volver</Text>
+        <Text style={[styles.backButtonText, esPaseador && styles.backButtonTextPaseador]}>
+          ← Volver
+        </Text>
       </TouchableOpacity>
 
       <View style={styles.header}></View>
@@ -215,7 +214,11 @@ export default function Login({ route, navigation }) {
 
         {/* 🔘 Botón de Iniciar Sesión */}
         <TouchableOpacity
-          style={[styles.loginButton, isWaiting && styles.disabledButton]}
+          style={[
+            styles.loginButton,
+            esPaseador && styles.loginButtonPaseador,
+            isWaiting && styles.disabledButton,
+          ]}
           disabled={isWaiting}
           onPress={iniciarSesion}
         >
@@ -226,9 +229,7 @@ export default function Login({ route, navigation }) {
 
         {/* 🔗 Olvidaste Contraseña */}
         <TouchableOpacity
-          onPress={() =>
-            alert("Funcionalidad de recuperación de contraseña próximamente")
-          }
+          onPress={() => navigation.navigate("RecuperarContraseniaClientePaseador", { tipo })}
           disabled={isWaiting}
         >
           <Text

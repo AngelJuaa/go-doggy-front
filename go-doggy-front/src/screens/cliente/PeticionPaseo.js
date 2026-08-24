@@ -8,8 +8,10 @@ import { API_URL, apiFetch } from "../../utils/api";
 import storage from "../../utils/storage";
 import { requestLocationPermission, getCurrentPosition } from "../../utils/geo";
 import { getSocket } from "../../utils/socket";
+import { useFocusEffect } from "@react-navigation/native";
 
 const DIRECCION_SELECCIONADA_KEY = "direccion_mapa_seleccionada";
+const BUSQUEDA_PENDIENTE_KEY = "busqueda_paseador_pendiente";
 
 const getDireccionLabel = (direccion) => {
   if (!direccion) return null;
@@ -62,10 +64,29 @@ export default function PeticionPaseo({ navigation }) {
   const [focusedField, setFocusedField] = useState("");
   const [direccionGuardada, setDireccionGuardada] = useState(readSelectedDireccion());
   const [servicioPendienteId, setServicioPendienteId] = useState(null);
+  const [busquedaExpiraEn, setBusquedaExpiraEn] = useState(null);
+  const [busquedaAhora, setBusquedaAhora] = useState(Date.now());
   const socket = getSocket();
 
+  const cancelarBusqueda = async () => {
+    const servicioId = Number(servicioPendienteId || 0);
+    setServicioPendienteId(null);
+    setBusquedaExpiraEn(null);
+    storage.removeItem(BUSQUEDA_PENDIENTE_KEY);
+
+    if (!servicioId) return;
+
+    try {
+      await apiFetch(`/servicio/${servicioId}/cancelar-peticion`, { method: "PUT" });
+    } catch (error) {
+      console.error("No se pudo cancelar la búsqueda:", error);
+    }
+  };
+
   const tiposServicio = ["Paseo", "Guardería", "Veterinaria", "Estética"];
-  const duraciones = ["15", "30", "45", "60", "90"];
+  const duraciones = ["1", "15", "30", "45", "60", "90"];
+  const direccionTieneCoordenadas = Boolean(getDireccionCoords(direccionGuardada));
+  const ubicacionSeleccionadaEnMapa = String(direccionGuardada?.direccion_id || "").startsWith("temp_");
 
   useEffect(() => {
     const u = JSON.parse(storage.getItem("usuario") || "{}");
@@ -77,6 +98,21 @@ export default function PeticionPaseo({ navigation }) {
     setDireccionGuardada(readSelectedDireccion());
   }, [socket]);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      setDireccionGuardada(readSelectedDireccion());
+    }, []),
+  );
+
+  useEffect(() => {
+    const sincronizarDireccion = () => {
+      setDireccionGuardada(readSelectedDireccion());
+    };
+
+    storage.subscribe(DIRECCION_SELECCIONADA_KEY, sincronizarDireccion);
+    return () => storage.unsubscribe(DIRECCION_SELECCIONADA_KEY, sincronizarDireccion);
+  }, []);
+
   useEffect(() => {
     if (!servicioPendienteId) return;
 
@@ -87,11 +123,13 @@ export default function PeticionPaseo({ navigation }) {
       const estado = String(payload?.estado || "").toLowerCase();
       if (estado === "en_camino" || estado === "activo") {
         setServicioPendienteId(null);
+        setBusquedaExpiraEn(null);
         navigation.navigate("MapaCliente", { servicioId });
         return;
       }
 
       setServicioPendienteId(null);
+      setBusquedaExpiraEn(null);
 
       let params = {
         servicioId,
@@ -127,6 +165,24 @@ export default function PeticionPaseo({ navigation }) {
   }, [socket, servicioPendienteId, navigation]);
 
   useEffect(() => {
+    const handleSinPaseador = (payload) => {
+      if (Number(payload?.servicio_id) !== Number(servicioPendienteId)) return;
+      setServicioPendienteId(null);
+      setBusquedaExpiraEn(null);
+      Alert.alert("Sin paseador disponible", "No se encontró ningún paseador disponible. Inténtalo más tarde.");
+    };
+
+    socket.on("cliente:busqueda:sin-paseador", handleSinPaseador);
+    return () => socket.off("cliente:busqueda:sin-paseador", handleSinPaseador);
+  }, [socket, servicioPendienteId]);
+
+  useEffect(() => {
+    if (!busquedaExpiraEn) return;
+    const intervalId = setInterval(() => setBusquedaAhora(Date.now()), 1000);
+    return () => clearInterval(intervalId);
+  }, [busquedaExpiraEn]);
+
+  useEffect(() => {
     if (!servicioPendienteId) return;
 
     let cancelled = false;
@@ -140,6 +196,7 @@ export default function PeticionPaseo({ navigation }) {
 
         if (estado === "confirmar_precio") {
           setServicioPendienteId(null);
+          setBusquedaExpiraEn(null);
           navigation.navigate("MetodoPagoCliente", {
             servicioId: Number(servicio.servicio_id || servicioPendienteId),
             tarifa_base_hora: Number(servicio.tarifa_base_hora),
@@ -152,6 +209,7 @@ export default function PeticionPaseo({ navigation }) {
 
         if (estado === "en_camino" || estado === "activo") {
           setServicioPendienteId(null);
+          setBusquedaExpiraEn(null);
           navigation.navigate("MapaCliente", { servicioId: Number(servicio.servicio_id || servicioPendienteId) });
         }
       } catch (error) {
@@ -190,10 +248,22 @@ export default function PeticionPaseo({ navigation }) {
   };
 
   const solicitarPaseo = async () => {
+    const direccionSeleccionadaActual = readSelectedDireccion();
+
+    if (direccionSeleccionadaActual) {
+      setDireccionGuardada(direccionSeleccionadaActual);
+    }
+
     if (mascotasSeleccionadas.length === 0) {
       Alert.alert("Error", "Selecciona una o más mascotas primero.");
       return;
     }
+
+    if (!direccionSeleccionadaActual || !getDireccionCoords(direccionSeleccionadaActual)) {
+      Alert.alert("Error", "Selecciona una direccion en el mapa antes de solicitar el paseo.");
+      return;
+    }
+
     setLoading(true);
     try {
       // Obtener ubicación REAL del cliente (GPS en nativo, navegador en web)
@@ -202,12 +272,20 @@ export default function PeticionPaseo({ navigation }) {
       const pos = await getCurrentPosition();
       if (pos) { lat = pos.lat; lng = pos.lng; }
 
+      const direccionCoords = getDireccionCoords(direccionSeleccionadaActual);
+      if (direccionCoords) {
+        lat = direccionCoords.latitud;
+        lng = direccionCoords.longitud;
+      }
+
       const payload = {
         dueno_id: usuario.usuario_id,
         mascota_ids: mascotasSeleccionadas.map((mascota) => mascota.mascota_id),
         tipo_servicio: tipoServicio,
         duracion_minutos: parseInt(duracion),
         notas_dueno: notas,
+        direccion_id: Number(direccionSeleccionadaActual.direccion_id),
+        ubicacion_personalizada: String(direccionSeleccionadaActual.direccion_id).startsWith("temp_"),
         lat,
         lng,
       };
@@ -218,12 +296,14 @@ export default function PeticionPaseo({ navigation }) {
       });
 
       setServicioPendienteId(Number(servicio.servicio_id));
+      const busquedaExpira = Date.now() + 5 * 60 * 1000;
+      setBusquedaExpiraEn(busquedaExpira);
+      storage.setItem(BUSQUEDA_PENDIENTE_KEY, JSON.stringify({
+        servicioPendienteId: Number(servicio.servicio_id),
+        busquedaExpiraEn: busquedaExpira,
+      }));
 
-      Alert.alert(
-        "¡Solicitud enviada!",
-        "Un paseador se encargará pronto. Te llevamos al pago cuando acepten.",
-        [{ text: "Ver en mapa", onPress: () => navigation.navigate("MapaCliente", { servicioId: servicio.servicio_id }) }]
-      );
+      Alert.alert("¡Solicitud enviada!", "Estamos buscando un paseador cercano.");
     } catch (e) {
       Alert.alert("Error", e.message);
     } finally {
@@ -243,19 +323,32 @@ export default function PeticionPaseo({ navigation }) {
         </View>
 
         <View style={styles.formCard}>
-          {/* UBICACIÓN GUARDADA */}
-          <Text style={styles.sectionLabel}>Ubicación guardada</Text>
+          {busquedaExpiraEn ? (
+            <View style={styles.busquedaCard}>
+              <Text style={styles.busquedaTitle}>Buscando paseador cercano</Text>
+              <Text style={styles.busquedaTimer}>
+                {`${Math.floor(Math.max(0, busquedaExpiraEn - busquedaAhora) / 60000)}:${String(Math.floor((Math.max(0, busquedaExpiraEn - busquedaAhora) % 60000) / 1000)).padStart(2, "0")}`}
+              </Text>
+              <TouchableOpacity style={styles.btnCancelarBusqueda} onPress={cancelarBusqueda}>
+                <Text style={styles.btnCancelarText}>Cancelar búsqueda</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+          {/* UBICACIÓN SELECCIONADA */}
+          <Text style={styles.sectionLabel}>
+            {ubicacionSeleccionadaEnMapa ? "Ubicación seleccionada en el mapa" : "Ubicación guardada"}
+          </Text>
           <View style={styles.ubicacionCard}>
-            {direccionGuardada ? (
+            {direccionGuardada && direccionTieneCoordenadas ? (
               <>
-                <Text style={styles.ubicacionTitulo}>📍 Tu ubicación actual</Text>
+                <Text style={styles.ubicacionTitulo}>
+                  {ubicacionSeleccionadaEnMapa ? "📍 Ubicación elegida" : "📍 Tu ubicación actual"}
+                </Text>
                 <Text style={styles.ubicacionTexto}>{getDireccionLabel(direccionGuardada)}</Text>
-                {getDireccionCoords(direccionGuardada) ? (
-                  <Text style={styles.ubicacionCoords}>
-                    Lat: {getDireccionCoords(direccionGuardada).latitud.toFixed(6)}
-                    {'\n'}Lng: {getDireccionCoords(direccionGuardada).longitud.toFixed(6)}
-                  </Text>
-                ) : null}
+                <Text style={styles.ubicacionCoords}>
+                  Lat: {getDireccionCoords(direccionGuardada).latitud.toFixed(6)}
+                  {'\n'}Lng: {getDireccionCoords(direccionGuardada).longitud.toFixed(6)}
+                </Text>
               </>
             ) : (
               <Text style={styles.emptyText}>No tienes una ubicación guardada seleccionada en el mapa.</Text>
@@ -431,6 +524,15 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 2 },
   },
+  busquedaCard: {
+    backgroundColor: "rgba(255, 255, 255, 0.75)",
+    borderRadius: s(16),
+    padding: s(14),
+    alignItems: "center",
+    marginBottom: vs(14),
+  },
+  busquedaTitle: { fontSize: ms(14), fontWeight: "bold", color: "#333" },
+  busquedaTimer: { fontSize: ms(24), fontWeight: "bold", color: "#2E7D4F", marginTop: vs(4) },
   ubicacionCard: {
     backgroundColor: "rgba(255, 255, 255, 0.75)",
     borderRadius: s(16),
@@ -482,6 +584,8 @@ const styles = StyleSheet.create({
   btnSolicitar: { backgroundColor: "#E6B5B5", borderRadius: s(25), paddingVertical: vs(15), alignItems: "center", marginTop: vs(24) },
   btnDisabled: { backgroundColor: "#ccc" },
   btnText: { fontSize: ms(17), fontWeight: "bold", color: "#333" },
+  btnCancelarBusqueda: { backgroundColor: "#E74C3C", borderRadius: s(20), paddingVertical: vs(10), alignItems: "center", marginTop: vs(12) },
+  btnCancelarText: { fontSize: ms(14), fontWeight: "bold", color: "#fff" },
   bottomTab: {
     flexDirection: "row",
     backgroundColor: "#99D9C1",

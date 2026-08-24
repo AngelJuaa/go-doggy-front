@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { s, vs, ms } from "../../utils/responsive";
 import { apiFetch } from "../../utils/api";
 import storage from "../../utils/storage";
@@ -8,10 +9,27 @@ export default function PaseosPaseador({ navigation }) {
   const [paseos, setPaseos] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const u = JSON.parse(storage.getItem("usuario") || "{}");
-    if (u.usuario_id) cargar(u.usuario_id);
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      const perfilPaseador = JSON.parse(storage.getItem("paseador") || "{}");
+      const usuario = JSON.parse(storage.getItem("usuario") || "{}");
+      const paseadorId = Number(
+        perfilPaseador.paseador_id ||
+        perfilPaseador.usuario_id ||
+        perfilPaseador.id ||
+        usuario.usuario_id ||
+        0
+      );
+
+      setLoading(true);
+      if (paseadorId) {
+        cargar(paseadorId);
+      } else {
+        setPaseos([]);
+        setLoading(false);
+      }
+    }, [])
+  );
 
   const cargar = async (id) => {
     try {

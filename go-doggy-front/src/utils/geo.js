@@ -26,7 +26,7 @@ export async function getCurrentPosition() {
       navigator.geolocation.getCurrentPosition(
         (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
         () => resolve(null),
-        { enableHighAccuracy: true, timeout: 8000 }
+        { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
       );
     });
   }
@@ -68,8 +68,8 @@ export async function watchPosition(onUpdate, onError) {
     const Location = require("expo-location");
     const sub = await Location.watchPositionAsync(
       {
-        accuracy: Location.Accuracy.High,
-        timeInterval: 1500, // cada 1.5 s
+        accuracy: Location.Accuracy.Balanced,
+        timeInterval: 1000,
         distanceInterval: 0, // siempre (necesario en emulador estático)
       },
       (pos) => onUpdate({ lat: pos.coords.latitude, lng: pos.coords.longitude })

@@ -55,6 +55,14 @@ export default function NotificacionDetalle({ route, navigation }) {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.descripcion}>{notificacion.descripcion}</Text>
+        {notificacion.detalles && Object.entries(notificacion.detalles).map(([label, value]) => (
+          value !== undefined && value !== null && value !== "" ? (
+            <View key={label} style={styles.detailRow}>
+              <Text style={styles.detailLabel}>{label}:</Text>
+              <Text style={styles.detailValue}>{String(value)}</Text>
+            </View>
+          ) : null
+        ))}
       </ScrollView>
 
       {/* BOTTOM TAB */}
@@ -153,6 +161,16 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     letterSpacing: 0.3,
   },
+  detailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#d8d1b9",
+    paddingVertical: 10,
+  },
+  detailLabel: { flex: 1, color: "#555", fontSize: 13, fontWeight: "600" },
+  detailValue: { flex: 1, color: "#222", fontSize: 13, textAlign: "right" },
 
   noData: {
     color: "#888",

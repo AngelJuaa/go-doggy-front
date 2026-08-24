@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { View, Text, Image, ScrollView, TouchableOpacity, Alert } from "react-native";
+import React from "react";
+import { View, Text, Image, ScrollView, TouchableOpacity } from "react-native";
 import { styles } from "./ServicioComidaDetallesStyles";
 
 export default function Servicio_Detalles_Comida({ route, navigation }) {
@@ -70,21 +70,6 @@ export default function Servicio_Detalles_Comida({ route, navigation }) {
           <Text style={styles.detailValue}>{productoData.garantia}</Text>
         </View>
 
-        {/* BOTONES */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.agregarButton}
-            onPress={() => Alert.alert("Carrito", `"${productoData.nombre}" agregado al carrito.`)}
-          >
-            <Text style={styles.buttonText}>Agregar al Carrito</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.contactButton}
-            onPress={() => Alert.alert("Contactar Vendedor", `Vendedor: ${productoData.marca}\nGarantía: ${productoData.garantia}`)}
-          >
-            <Text style={styles.buttonText}>Contactar Vendedor</Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
     </View>
   );
